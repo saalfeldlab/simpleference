@@ -32,3 +32,8 @@ def get_offset_lists(path,
         list_name = os.path.join(save_folder, './list_gpu_%i.json' % gpu_list[ii])
         with open(list_name, 'w') as f:
             json.dump(olist, f)
+
+
+# TODO
+def stitch_prediction_blocks(block_folder, out_shape):
+    pass
