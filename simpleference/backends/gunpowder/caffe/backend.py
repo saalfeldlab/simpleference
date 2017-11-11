@@ -1,7 +1,24 @@
 import os
 
+from gunpowder import VolumeTypes
 from gunpowder.caffe.net_io_wrapper import NetIoWrapper
 from gunpowder.ext import caffe
+
+
+def build_caffe_prediction(prototxt, weights, gpu):
+    assert os.path.exists(prototxt)
+    assert os.path.exists(weights)
+
+    pred = CaffePredict(prototxt,
+                        weights,
+                        inputs={
+                            VolumeTypes.RAW: 'data'
+                        },
+                        outputs={
+                            VolumeTypes.PRED_AFFINITIES: 'aff_pred'
+                        },
+                        use_gpu=gpu)
+    return pred
 
 
 class CaffePredict(object):

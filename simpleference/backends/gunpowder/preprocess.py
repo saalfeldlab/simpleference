@@ -26,6 +26,6 @@ def zero_out_const_sections(data):
 
 
 def preprocess(data, scale=2, shift=-1):
-    return zero_out_const_sections(scale_shift(normalize(data,
+    return zero_out_const_sections(scale_shift(normalize(data),
                                                          scale,
-                                                         shift)))
+                                                         shift))
