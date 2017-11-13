@@ -15,5 +15,6 @@ def get_t_inf(folder):
 
 
 if __name__ == '__main__':
-    folder = './prediction_blocks_A+'
+    sample = 'C+'
+    folder = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/prediction_blocks_%s' % sample
     print(get_t_inf(folder))

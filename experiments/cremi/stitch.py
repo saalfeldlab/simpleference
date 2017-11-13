@@ -1,26 +1,34 @@
 import h5py
 import time
-from simpleference.inference.util import stitch_prediction_blocks
+from simpleference.inference.util import stitch_prediction_blocks, extract_nn_affinities
 
 
 def stitch(sample):
-    folder = './prediction_blocks_%s' % sample
-    save_file = './prediction_sample_%s.h5' % sample
+    save_folder = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/prediction_blocks_%s' % sample
+    save_prefix = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/cremi_warped_sample%s_affinities' % sample
 
-    # TODO padded realigned volumes
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/mala_jan_original/raw/sample_%s.h5' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/cremi_warped_sample%s.h5' % sample
 
     with h5py.File(raw_path, 'r') as f:
         spatial_shape = f['data'].shape
 
-    n_channels = 12
-    shape = (n_channels,) + spatial_shape
+    # n_channels = 12
+    # shape = (n_channels,) + spatial_shape
 
     t_st = time.time()
-    stitch_prediction_blocks(save_file, folder, shape)
-    print("Stitching took %f s" % (time.time - t_st, ))
+    extract_nn_affinities(save_prefix, save_folder, spatial_shape)
+    # stitch_prediction_blocks(save_file, save_folder, shape)
+    t_st  = time.time() - t_st
+    print("Stitching took %f s" % t_st)
+    return t_st
 
 
 if __name__ == '__main__':
-    sample = 'A+'
-    stitch(sample)
+    samples = ['A+', 'B+', 'C+']
+    times = []
+    for sample in samples:
+        t_stitch = stitch(sample)
+        times.append(t_stitch)
+
+    for tt in times:
+        print("Stitching in %f s" % tt)

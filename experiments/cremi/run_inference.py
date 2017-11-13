@@ -8,12 +8,9 @@ from simpleference.backends.gunpowder.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu, iteration):
-    # TODO padded realigned volumes
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/mala_jan_original/raw/sample_%s.h5' % sample
-    # TODO save somewhere reasonable
-    save_folder = './prediction_blocks_%s' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/cremi_warped_sample%s.h5' % sample
+    save_folder = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/prediction_blocks_%s' % sample
 
-    # TODO proper paths
     prototxt = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi/long_range_v2/long_range_unet.prototxt'
     weights  = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi/long_range_v2/net_iter_%i.caffemodel' % iteration
 

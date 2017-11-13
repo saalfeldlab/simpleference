@@ -2,6 +2,7 @@ from __future__ import print_function
 import h5py
 import os
 import json
+from concurrent import futures
 
 
 # this returns the offsets for the given output blocks.
@@ -37,7 +38,11 @@ def stitch_prediction_blocks(save_path,
                              shape):
 
     with h5py.File(save_path, 'w') as f:
-        ds = f.create_dataset('data', shape=shape, dtype='float32', compression='gzip')
+        ds = f.create_dataset('data',
+                              shape=shape,
+                              dtype='float32',
+                              compression='gzip',
+                              chunks=(64, 64, 64))
         files = os.listdir(block_folder)
 
         for i, ff in enumerate(files):
@@ -58,3 +63,49 @@ def stitch_prediction_blocks(save_path,
             bb = (slice(None),) + tuple(slice(off, off + block_shape[ii])
                                         for ii, off in enumerate(offsets))
             ds[bb] = block_data
+
+
+def extract_nn_affinities(save_prefix,
+                          block_folder,
+                          shape,
+                          invert_affs=False):
+
+    save_path_xy = save_prefix + '_xy.h5'
+    save_path_z = save_prefix + '_z.h5'
+    with h5py.File(save_path_xy, 'w') as f_xy, h5py.File(save_path_z, 'w') as f_z:
+        ds_xy = f_xy.create_dataset('data',
+                                    shape=shape,
+                                    dtype='float32',
+                                    compression='gzip',
+                                    chunks=(56, 56, 56))
+        ds_z = f_z.create_dataset('data',
+                                  shape=shape,
+                                  dtype='float32',
+                                  compression='gzip',
+                                  chunks=(56, 56, 56))
+        files = os.listdir(block_folder)
+
+        def extract_block(i, ff):
+            print("Stitching block %i / %i" % (i, len(files)))
+            offsets = [int(off) for off in ff[:-3].split('_')[1:]]
+
+            with h5py.File(os.path.join(block_folder, ff), 'r') as g:
+                block_data = g['data'][:3]
+
+            if invert_affs:
+                block_data = 1. - block_data
+
+            block_shape = block_data.shape[1:]
+            # Need to add slice for channel dimension
+            bb = tuple(slice(off, off + block_shape[ii]) for ii, off in enumerate(offsets))
+            ds_xy[bb] = (block_data[1] + block_data[2]) / 2.
+            ds_z[bb] = block_data[0]
+
+        with futures.ThreadPoolExecutor(max_workers=20) as tp:
+            tasks = []
+            for i, ff in enumerate(files):
+                if not ff.startswith('block'):
+                    continue
+                assert ff[-3:] == '.h5'
+                tasks.append(tp.submit(extract_block, i, ff))
+            [t.result() for t in tasks]
