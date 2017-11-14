@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 
 
-def load_input(ds, offset, context, output_shape):
+def load_input(ds, offset, context, output_shape, padding_mode='reflect'):
     starts = [off - context[i] for i, off in enumerate(offset)]
     stops  = [off + output_shape[i] + context[i] for i, off in enumerate(offset)]
     shape = ds.shape
@@ -32,7 +32,7 @@ def load_input(ds, offset, context, output_shape):
         pad_right = (0, 0, 0) if pad_right is None else pad_right
         pad_width = tuple((pl, pr) for pl, pr in zip(pad_left, pad_right))
         # TODO should we use constant padding with zeros instead of reflection padding ?
-        data = np.pad(data, pad_width, mode='reflect')
+        data = np.pad(data, pad_width, mode=padding_mode)
 
     return data
 
@@ -44,12 +44,17 @@ def run_inference(prediction,
                   save_folder,
                   offset_list,
                   output_shape=(56, 56, 56),
-                  input_shape=(84, 268, 268)):
+                  input_shape=(84, 268, 268),
+                  rejection_criterion=None,
+                  padding_mode='reflect'):
 
     assert callable(prediction)
     assert callable(preprocess)
     assert os.path.exists(raw_path)
     assert len(output_shape) == len(input_shape)
+
+    if rejection_criterion is not None:
+        assert callable(rejection_criterion)
 
     n_blocks = len(offset_list)
     print("Starting prediction for data %s." % raw_path)
@@ -71,7 +76,12 @@ def run_inference(prediction,
         for ii, offset in enumerate(offset_list):
 
             print("Predicting block", ii, "/", n_blocks)
-            data = load_input(ds, offset, context, output_shape)
+            data = load_input(ds, offset, context, output_shape, padding_mode=padding_mode)
+
+            if rejection_criterion is not None:
+                if rejection_criterion(data):
+                    continue
+
             data = preprocess(data)
 
             out = prediction({'data': data})

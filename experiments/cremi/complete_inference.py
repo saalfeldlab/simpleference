@@ -11,11 +11,15 @@ def single_inference(sample, gpu, iteration):
 
 
 def complete_inference(sample, gpu_list, iteration):
-    save_folder = './offsets_sample%s' % sample
 
+    # path to the raw data
     raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/cremi_warped_sample%s.h5' % sample
+
+    # make the offset files, that assign blocks to gpus
+    save_folder = './offsets_sample%s' % sample
     get_offset_lists(raw_path, gpu_list, save_folder)
 
+    # run multiprocessed inference
     with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
         tasks = [pp.submit(single_inference, sample, gpu, iteration) for gpu in gpu_list]
         result = [t.result() for t in tasks]
