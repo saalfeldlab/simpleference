@@ -11,10 +11,10 @@ def get_t_inf(folder):
         with open(os.path.join(folder, ff), 'r') as f:
             line = f.readline()
         t_infs.append(float(line.split()[-2]))
-    return np.max(t_infs)
+    return np.max(t_infs), np.mean(t_infs), np.min(t_infs), np.std(t_infs)
 
 
 if __name__ == '__main__':
     sample = 'C+'
-    folder = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/prediction_blocks_%s' % sample
+    folder = '/nrs/saalfeld/heinrichl/segmentation/distance_thirdtest/fib25_sub_prediction_at_400000/'
     print(get_t_inf(folder))
