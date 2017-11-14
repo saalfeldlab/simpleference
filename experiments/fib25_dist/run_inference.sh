@@ -19,5 +19,5 @@ nvidia-docker run --rm \
     -v /groups/saalfeld/home/papec:/groups/saalfeld/home/papec \
     -w /workspace \
     --name $NAME \
-    funkey/gunpowder:v0.3-pre2 \
+    funkey/gunpowder:v0.3-pre4 \
     /bin/bash -c "PYTHONPATH=${GUNPOWDER_PATH}:${SIMPLEFERENCE_PATH}:\$PYTHONPATH; python -u ${PRED_PATH}/run_inference.py $1 $2 $3"
