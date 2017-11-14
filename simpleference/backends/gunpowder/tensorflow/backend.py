@@ -1,15 +1,6 @@
 import numpy as np
-
+import os
 from gunpowder.ext import tensorflow as tf
-from gunpowder.nodes.generic_predict import GenericPredict
-from gunpowder.volume import VolumeType, Volume
-from gunpowder.tensorflow.local_server import LocalServer
-
-
-# TODO
-def build_tensorflow_prediction():
-    pass
-
 
 class TensorflowPredict(object):
     pass
@@ -38,12 +29,12 @@ class TensorflowPredict(object):
 
     def __init__(self,
                  meta_graph_basename,
-                 inputs,
-                 outputs):
-
+                 input_key,
+                 output_key):
+        assert os.path.exists(meta_graph_basename+'.meta')
         self.meta_graph_basename = meta_graph_basename
-        self.inputs = inputs
-        self.outputs = outputs
+        self.input_key = input_key
+        self.output_key = output_key
 
         self.graph = tf.Graph()
         self.session = tf.Session(graph=self.graph)
@@ -52,20 +43,13 @@ class TensorflowPredict(object):
             self._read_meta_graph()
 
     def __call__(self, input_data):
-        assert isinstance(input_data, dict)
-        outputs = self.session.run(volume_outputs, feed_dict=input_data)
-
-    def predict(self, batch, request):
-
-        volume_outputs = self.__collect_requested_outputs(request)
-        inputs = self.__collect_provided_inputs(batch)
-
-        # compute outputs
-        output = self.session.run(self.outputs, feed_dict=inputs)
+        assert isinstance(input_data, np.ndarray)
+        output = self.session.run(self.output_key, feed_dict={self.input_key: input_data})[self.output_key]
         assert isinstance(output, np.ndarray)
-        if output.ndim == 3:
-            output = output[None]
-        return output
+        if output.ndim == 5:
+            output = output[0]
+        assert output.ndim == 4
+        return output.astype('float32')
 
     def _read_meta_graph(self):
         # read the meta-graph

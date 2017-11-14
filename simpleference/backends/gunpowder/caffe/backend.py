@@ -1,24 +1,7 @@
 import os
-
-from gunpowder import VolumeTypes
+import numpy as np
 from gunpowder.caffe.net_io_wrapper import NetIoWrapper
 from gunpowder.ext import caffe
-
-
-def build_caffe_prediction(prototxt, weights, gpu):
-    assert os.path.exists(prototxt)
-    assert os.path.exists(weights)
-
-    pred = CaffePredict(prototxt,
-                        weights,
-                        inputs={
-                            VolumeTypes.RAW: 'data'
-                        },
-                        outputs={
-                            VolumeTypes.PRED_AFFINITIES: 'aff_pred'
-                        }, gpu=gpu)
-    return pred
-
 
 class CaffePredict(object):
     '''Augments a batch with network predictions.
@@ -42,18 +25,20 @@ class CaffePredict(object):
     def __init__(self,
                  prototxt,
                  weights,
-                 inputs,
-                 outputs,
+                 input_key,
+                 output_key,
                  gpu):
 
         # TODO validate that gpu is available
+        assert os.path.exists(prototxt)
+        assert os.path.exists(weights)
         for f in [prototxt, weights]:
             if not os.path.isfile(f):
                 raise RuntimeError("%s does not exist" % f)
         self.prototxt = prototxt
         self.weights = weights
-        self.inputs = inputs
-        self.outputs = outputs
+        self.input_key = input_key
+        self.output_key = output_key
 
         caffe.enumerate_devices(False)
         caffe.set_devices((gpu,))
@@ -61,15 +46,16 @@ class CaffePredict(object):
         caffe.select_device(gpu, False)
 
         self.net = caffe.Net(self.prototxt, self.weights, caffe.TEST)
-        self.net_io = NetIoWrapper(self.net, self.outputs.values())
+        self.net_io = NetIoWrapper(self.net, [self.output_key])
 
     def __call__(self, input_data):
-        assert isinstance(input_data, dict)
-        self.net_io.set_inputs({
-            input_name: data
-            for input_name, data in input_data.items()
-        })
+        assert isinstance(input_data, np.ndarray)
+        self.net_io.set_inputs({self.input_key: input_data})
 
         self.net.forward()
-        output = self.net_io.get_outputs()
-        return output
+        output = self.net_io.get_outputs()[self.output_key]
+        assert isinstance(output, np.ndarray)
+        if output.ndim == 5:
+            output = output[0]
+        assert output.ndim == 4
+        return output.astype('float32')

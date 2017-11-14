@@ -82,10 +82,7 @@ def run_inference(prediction,
                 if rejection_criterion(data):
                     continue
 
-            data = preprocess(data)
-
-            out = prediction({'data': data})
-            out = out['aff_pred'].squeeze().astype('float32')
+            out = prediction(preprocess(data))
 
             # crop if necessary
             stops = [off + outs for off, outs in zip(offset, out.shape[1:])]
