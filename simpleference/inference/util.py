@@ -35,34 +35,46 @@ def get_offset_lists(path,
 
 def stitch_prediction_blocks(save_path,
                              block_folder,
-                             shape):
+                             shape,
+                             key = 'data'
+                             end_channel=None,
+                             n_workers=8,
+                             chunks=(64, 64, 64)):
+
+    if end_channel is None:
+        chan_slice = (slice(None),)
+    else:
+        assert end_channel <= shape[0]
+        chan_slice = (slice(0, end_channel),)
+
+    def stitch_block(ds, block_id, block_file, n_blocks):
+        print("Stitching block %i / %i" % (block_id, n_blocks))
+        offsets = [int(off) for off in block_file[:-3].split('_')[1:]]
+        with h5py.File(os.path.join(block_folder, block_file), 'r') as g:
+            block_data = g['data'][:]
+        block_shape = block_data.shape[1:]
+        # Need to add slice for channel dimension
+        bb = chan_slice + tuple(slice(off, off + block_shape[ii])
+                                for ii, off in enumerate(offsets))
+        ds[bb] = block_data
+
 
     with h5py.File(save_path, 'w') as f:
-        ds = f.create_dataset('data',
+        ds = f.create_dataset(key,
                               shape=shape,
                               dtype='float32',
                               compression='gzip',
-                              chunks=(64, 64, 64))
+                              chunks=chunks)
         files = os.listdir(block_folder)
+        # filter out invalid filenames
+        files = [ff for ff in files if ff.startswith('block')]
+        # make sure all blocks are h5 files
+        assert all(ff[-3:] == '.h5' for ff in files)
 
-        for i, ff in enumerate(files):
-
-            print("Stitching block %i / %i" % (i, len(files)))
-
-            if not ff.startswith('block'):
-                continue
-
-            assert ff[-3:] == '.h5'
-            offsets = [int(off) for off in ff[:-3].split('_')[1:]]
-
-            with h5py.File(os.path.join(block_folder, ff), 'r') as g:
-                block_data = g['data'][:]
-
-            block_shape = block_data.shape[1:]
-            # Need to add slice for channel dimension
-            bb = (slice(None),) + tuple(slice(off, off + block_shape[ii])
-                                        for ii, off in enumerate(offsets))
-            ds[bb] = block_data
+        with futures.ThreadPoolExecutor(max_workers=n_workers) as tp:
+            tasks = [tp.submit(stitch_block, ds, block_id, block_file, n_blocks)
+                     for block_id, block_file in enumerate(files)]
+            [t.result() for t in tasks]
 
 
 def extract_nn_affinities(save_prefix,
