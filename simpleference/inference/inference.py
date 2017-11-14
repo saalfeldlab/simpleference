@@ -43,8 +43,8 @@ def run_inference(prediction,
                   raw_path,
                   save_folder,
                   offset_list,
-                  output_shape=(56, 56, 56),
-                  input_shape=(84, 268, 268),
+                  output_shape,#=(56, 56, 56),
+                  input_shape,#=(84, 268, 268),
                   rejection_criterion=None,
                   padding_mode='reflect'):
 
@@ -80,6 +80,7 @@ def run_inference(prediction,
 
             if rejection_criterion is not None:
                 if rejection_criterion(data):
+                    print("Rejecting block", ii, "/", n_blocks)
                     continue
 
             out = prediction(preprocess(data))
