@@ -2,8 +2,9 @@ from __future__ import print_function
 import h5py
 import os
 import json
-from concurrent import futures
+
 from random import shuffle
+import numpy as np
 
 
 # this returns the offsets for the given output blocks.
@@ -11,7 +12,7 @@ from random import shuffle
 def get_offset_lists(path,
                      gpu_list,
                      save_folder,
-                     output_shape=(56, 56, 56),
+                     output_shape,#=(56, 56, 56),
                      randomize=False):
     assert os.path.exists(path), path
     with h5py.File(path, 'r') as f:
@@ -44,8 +45,8 @@ def stitch_prediction_blocks(save_path,
                              key = 'data',
                              end_channel=None,
                              n_workers=8,
-                             chunks=(64, 64, 64)):
-
+                             chunks=(1, 64, 64, 64)):
+    from concurrent import futures
     if end_channel is None:
         chan_slice = (slice(None),)
     else:
@@ -75,7 +76,7 @@ def stitch_prediction_blocks(save_path,
         files = [ff for ff in files if ff.startswith('block')]
         # make sure all blocks are h5 files
         assert all(ff[-3:] == '.h5' for ff in files)
-
+        n_blocks = len(files)
         with futures.ThreadPoolExecutor(max_workers=n_workers) as tp:
             tasks = [tp.submit(stitch_block, ds, block_id, block_file, n_blocks)
                      for block_id, block_file in enumerate(files)]
@@ -86,7 +87,7 @@ def extract_nn_affinities(save_prefix,
                           block_folder,
                           shape,
                           invert_affs=False):
-
+    from concurrent import futures
     save_path_xy = save_prefix + '_xy.h5'
     save_path_z = save_prefix + '_z.h5'
     with h5py.File(save_path_xy, 'w') as f_xy, h5py.File(save_path_z, 'w') as f_z:
