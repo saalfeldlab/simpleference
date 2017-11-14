@@ -44,7 +44,8 @@ class TensorflowPredict(object):
 
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
-        output = self.session.run(self.output_key, feed_dict={self.input_key: input_data})[self.output_key]
+        output = self.session.run(self.output_key, feed_dict={self.input_key: input_data})
+
         assert isinstance(output, np.ndarray)
         if output.ndim == 5:
             output = output[0]
