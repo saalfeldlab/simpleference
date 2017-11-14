@@ -2,7 +2,6 @@
 
 # Inputs:
 # GPU - id of the gpu used for inference
-# Sample - id of sample that will be predicted
 # Iteration - iteration of the network used
 
 export NAME=$(basename $PWD-prediction-$2)
@@ -20,4 +19,5 @@ nvidia-docker run --rm \
     -w /workspace \
     --name $NAME \
     funkey/gunpowder:v0.3-pre4 \
-    /bin/bash -c "PYTHONPATH=${GUNPOWDER_PATH}:${SIMPLEFERENCE_PATH}:\$PYTHONPATH; python -u ${PRED_PATH}/run_inference.py $1 $2 $3"
+    /bin/bash -c "export CUDA_VISIBLE_DEVICES=$1; PYTHONPATH=${GUNPOWDER_PATH}:${SIMPLEFERENCE_PATH}:\$PYTHONPATH;
+    python -u ${PRED_PATH}/run_inference.py $2"
