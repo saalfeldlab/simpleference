@@ -12,7 +12,7 @@ import numpy as np
 def get_offset_lists(path,
                      gpu_list,
                      save_folder,
-                     output_shape,#=(56, 56, 56),
+                     output_shape,
                      randomize=False):
     assert os.path.exists(path), path
     with h5py.File(path, 'r') as f:

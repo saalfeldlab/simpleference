@@ -3,7 +3,7 @@ import sys
 import time
 import json
 from simpleference.inference.inference import run_inference
-from simpleference.backends.gunpowder.caffe.backend import build_caffe_prediction
+from simpleference.backends.gunpowder.caffe.backend import CaffePredict
 from simpleference.backends.gunpowder.preprocess import preprocess
 
 
@@ -18,9 +18,23 @@ def single_gpu_inference(sample, gpu, iteration):
     with open(offset_file, 'r') as f:
         offset_list = json.load(f)
 
-    prediction = build_caffe_prediction(prototxt, weights, gpu)
+    input_key = 'data'
+    output_key = 'aff_pred'
+    input_shape = (84, 268, 268)
+    output_shape = (56, 56, 56)
+    prediction = CaffePredict(prototxt,
+                              weights,
+                              gpu,
+                              input_key=input_key,
+                              output_key=output_key)
     t_predict = time.time()
-    run_inference(prediction, preprocess, raw_path, save_folder, offset_list)
+    run_inference(prediction,
+                  preprocess,
+                  raw_path,
+                  save_folder,
+                  offset_list,
+                  input_shape=input_shape,
+                  output_shape=output_shape)
     t_predict = time.time() - t_predict
 
     with open(os.path.join(save_folder, 't-inf_gpu%i.txt' % gpu), 'w') as f:

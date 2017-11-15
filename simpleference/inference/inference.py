@@ -43,8 +43,8 @@ def run_inference(prediction,
                   raw_path,
                   save_folder,
                   offset_list,
-                  output_shape,#=(56, 56, 56),
-                  input_shape,#=(84, 268, 268),
+                  input_shape,
+                  output_shape,
                   rejection_criterion=None,
                   padding_mode='reflect'):
 

@@ -17,7 +17,8 @@ def complete_inference(sample, gpu_list, iteration):
 
     # make the offset files, that assign blocks to gpus
     save_folder = './offsets_sample%s' % sample
-    get_offset_lists(raw_path, gpu_list, save_folder)
+    output_shape = (56, 56, 56)
+    get_offset_lists(raw_path, gpu_list, save_folder, output_shape=output_shape)
 
     # run multiprocessed inference
     with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
