@@ -3,7 +3,6 @@ import numpy as np
 
 import dill
 import torch
-import torch.nn as nn
 from torch.autograd import Variable
 
 
@@ -15,20 +14,22 @@ class PyTorchPredict(object):
         # so we can always assume gpu 0 here
         self.gpu = 0
         self.model.cuda(self.gpu)
+        # validate cropping
+        if crop_prediction is not None:
+            assert isinstance(crop_prediction, (list, tuple))
+            assert len(crop_prediction) == 3
         self.crop_prediction = crop_prediction
 
-
     def crop(self, out):
-        pass
-
+        shape_diff = tuple((shape - crop) // 2
+                           for shape, crop in zip(out.shape, self.crop_prediction))
+        bb = tuple(slice(diff, shape - diff) for diff, shape in zip(shape_diff, out.shape))
+        return out[bb]
 
     def __call__(self, input_data):
-        assert isinstance(input_data, dict)
-        assert len(input_data) == 1
-        data = input_data.values()[0]
-        assert isinstance(data, np.ndarray)
-        assert data.ndim == 3
-        torch_data = Variable(torch.from_numpy(data[None, None]).cuda(self.gpu))
+        assert isinstance(input_data, np.ndarray)
+        assert input_data.ndim == 3
+        torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu))
         out = self.model(torch_data).cpu().numpy().squeeze()
         if self.crop_prediction is not None:
             out = self.crop(out)
