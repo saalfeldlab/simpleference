@@ -1,6 +1,13 @@
 import numpy as np
 import os
-from gunpowder.ext import tensorflow as tf
+
+# we try to use the tensorflow from gunpowder,
+# otherwise we try to revert to normal tensorflow
+try:
+    from gunpowder.ext import tensorflow as tf
+except ImportError:
+    import tensorflow as tf
+
 
 class TensorflowPredict(object):
     '''Tensorflow implementation of :class:`gunpowder.nodes.Predict`.
