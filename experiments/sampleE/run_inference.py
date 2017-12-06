@@ -7,16 +7,18 @@ from simpleference.backends.gunpowder.caffe.backend import CaffePredict
 from simpleference.backends.gunpowder.preprocess import preprocess
 
 
-def single_gpu_inference(sample, gpu, iteration):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s.n5' % sample
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/gp_caffe_predictions_iter_%i' % iteration
-    out_file = os.path.join(out_file, 'cremi_warped_sample%s_predictions_blosc.n5' % sample)
-    assert os.path.exists(out_file)
+def single_gpu_inference(gpu, iteration, gpu_offset):
+    # path to the raw data
+    raw_path = '/nrs/saalfeld/sample_E/sample_E.n5/volumes/raw/s0'
+
+    save_file = '/groups/saalfeld/saalfeldlab/sampleE/my_prediction.n5'
+    if not os.path.exists(os.path.split(save_file)[0]):
+        os.mkdir(os.path.split(save_file)[0])
 
     prototxt = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi/long_range_v2/long_range_unet.prototxt'
     weights  = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi/long_range_v2/net_iter_%i.caffemodel' % iteration
 
-    offset_file = './offsets_sample%s/list_gpu_%i.json' % (sample, gpu)
+    offset_file = './offset_lists/list_gpu_%i.json' % (gpu + gpu_offset,)
     with open(offset_file, 'r') as f:
         offset_list = json.load(f)
 
@@ -26,26 +28,25 @@ def single_gpu_inference(sample, gpu, iteration):
     output_shape = (56, 56, 56)
     prediction = CaffePredict(prototxt,
                               weights,
+                              gpu=gpu,
                               input_key=input_key,
-                              output_key=output_key,
-                              gpu=gpu)
+                              output_key=output_key)
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
                      raw_path,
-                     out_file,
+                     save_file,
                      offset_list,
                      input_shape=input_shape,
                      output_shape=output_shape)
     t_predict = time.time() - t_predict
 
-    # write timing informations as textfile in the n5 topdir
-    with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:
+    with open(os.path.join(save_folder, 't-inf_gpu%i.txt' % (gpu + gpu_list,)), 'w') as f:
         f.write("Inference with gpu %i in %f s" % (gpu, t_predict))
 
 
 if __name__ == '__main__':
-    sample = sys.argv[1]
-    gpu = int(sys.argv[2])
-    iteration = int(sys.argv[3])
-    single_gpu_inference(sample, gpu, iteration)
+    gpu = int(sys.argv[1])
+    iteration = int(sys.argv[2])
+    gpu_offset = int(sys.argv[3])
+    single_gpu_inference(gpu, iteration, gpu_offset)

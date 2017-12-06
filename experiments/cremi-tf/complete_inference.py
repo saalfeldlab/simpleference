@@ -24,28 +24,22 @@ def complete_inference(sample, gpu_list, iteration):
 
     # create the datasets
     out_shape = (56,) *3
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/gp_caffe_predictions_iter_%i' % iteration
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/gp_tf_predictions_iter_%i' % iteration
     if not os.path.exists(out_file):
         os.mkdir(out_file)
-    out_file = os.path.join(out_file, 'cremi_warped_sample%s_predictions_blosc.n5' % sample)
+    out_file = os.path.join(out_file, 'cremi_warped_sample%s_prediction_.n5' % sample)
 
     # the n5 file might exist already
     if not os.path.exists(out_file):
         f = z5py.File(out_file, use_zarr_format=False)
-        f.create_dataset('affs_xy',
+        f.create_dataset('affs_xy', shape=shape,
+                         compressor='gzip',
                          dtype='float32',
-                         shape=shape,
-                         chunks=out_shape,
-                         compressor='blosc',
-                         codec='lz4',
-                         shuffle=1)
-        f.create_dataset('affs_z',
+                         chunks=out_shape)
+        f.create_dataset('affs_z', shape=shape,
+                         compressor='gzip',
                          dtype='float32',
-                         shape=shape,
-                         chunks=out_shape,
-                         compressor='blosc',
-                         codec='lz4',
-                         shuffle=1)
+                         chunks=out_shape)
 
     # make the offset files, that assign blocks to gpus
     save_folder = './offsets_sample%s' % sample
@@ -65,6 +59,6 @@ def complete_inference(sample, gpu_list, iteration):
 
 if __name__ == '__main__':
     gpu_list = list(range(8))
-    iteration = 100000
+    iteration = 400000
     sample = 'A+'
     complete_inference(sample, gpu_list, iteration)

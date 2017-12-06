@@ -20,7 +20,7 @@ def single_gpu_inference(gpu, iteration):
     with open(net_io_json, 'r') as f:
         net_io_names = json.load(f)
 
-    prediction = TensorflowPredict(meta_graph, net_io_names['raw'],net_io_names['dist'])
+    prediction = TensorflowPredict(meta_graph, net_io_names['raw'], net_io_names['dist'])
     t_predict = time.time()
     run_inference(prediction, preprocess, raw_path, save_folder, offset_list, output_shape=(44,)*3, input_shape=(132,
                                                                                                                  )*3,
