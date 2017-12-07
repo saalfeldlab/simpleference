@@ -20,13 +20,14 @@ def precompute_offset_list(path, output_shape, n_threads=40):
     f = z5py.File(path, use_zarr_format=False)
     ds = f['mask']
     shape = ds.shape
+    print("Precomputing offset list for volume with shape", shape)
 
     def generate_blocks(z, y, x):
         stop_z = min(z + output_shape[0], shape[0])
         stop_y = min(y + output_shape[1], shape[1])
         stop_x = min(x + output_shape[2], shape[2])
 
-        bb = np.s_[z:stop_z, y:stop_y, z:stop_z]
+        bb = np.s_[z:stop_z, y:stop_y, x:stop_x]
         mask = ds[bb]
 
         # we run prediction for this block if any of the pixels is not masked
@@ -39,6 +40,7 @@ def precompute_offset_list(path, output_shape, n_threads=40):
                                                      for x in range(0, shape[2], output_shape[2])]
         prediction_blocks = [t.result() for t in tasks]
     prediction_blocks = [pred_block for pred_block in prediction_blocks if pred_block is not None]
+    print("Found %i valid blocks" % len(prediction_blocks))
 
     with open(tmp_path, 'w') as blockfile:
         json.dump(prediction_blocks, blockfile)
