@@ -24,10 +24,11 @@ except ImportError:
 class IoN5(object):
     def __init__(self, path, keys, save_only_nn_affs=False):
         assert WITH_Z5PY, "Need z5py"
+        assert len(keys) in (1, 2)
         self.path = path
         if save_only_nn_affs:
             assert len(keys) == 2
-        self.save_only_nn_affs = True
+        self.save_only_nn_affs = save_only_nn_affs
         self.keys = keys
         self.ff = z5py.File(self.path, use_zarr_format=False)
         assert all(kk in self.ff for kk in self.keys)
@@ -81,6 +82,9 @@ class IoHDF5(object):
     def shape(self):
         return self.shape
 
+    def close(self):
+        self.ff.close()
+
 
 class IoDVID(object):
     def __init__(self, server_address, uuid, key):
@@ -105,3 +109,6 @@ class IoDVID(object):
     @property
     def shape(self):
         return self.shape
+
+    def close(self):
+        pass

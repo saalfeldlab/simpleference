@@ -49,10 +49,22 @@ def run_inference_n5(prediction,
                      padding_mode='reflect'):
     assert os.path.exists(raw_path)
     assert os.path.exists(save_file)
+    # The N5 IO/Wrapper needs iterables as keys
+    # so we wrap the input key in a list.
+    # Note that this is not the case for the hdf5 wrapper,
+    # which just takes a single key.
     io_in = IoN5(raw_path, [input_key])
+    # This is specific to the N5 datasets, where I have implemented
+    # averaging over nearest neighbor xy-affinities and z affinities
+    # seperately.
     io_out = IoN5(save_file, ['affs_xy', 'affs_z'], save_only_nn_affs=True)
     run_inference(prediction, preprocess, io_in, io_out, offset_list,
                   input_shape, output_shape, rejection_criterion, padding_mode)
+    # This is not necessary for n5 datasets
+    # which do not need to be closed, but we leave it here for
+    # reference when using other (hdf5) io wrappers
+    io_in.close()
+    io_out.close()
 
 
 def run_inference(prediction,
