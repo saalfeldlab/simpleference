@@ -15,19 +15,18 @@ def single_inference(sample, gpu, iteration):
     return True
 
 
-def complete_inference(sample, gpu_list, iteration):
+def complete_inference(sample,
+                       gpu_list,
+                       iteration):
 
     # path to the raw data
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s.n5' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
     rf = z5py.File(raw_path, use_zarr_format=False)
     shape = rf['data'].shape
 
     # create the datasets
     out_shape = (56,) *3
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/gp_tf_predictions_iter_%i' % iteration
-    if not os.path.exists(out_file):
-        os.mkdir(out_file)
-    out_file = os.path.join(out_file, 'cremi_warped_sample%s_prediction_.n5' % sample)
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities.n5' % sample
 
     # the n5 file might exist already
     if not os.path.exists(out_file):
@@ -58,7 +57,7 @@ def complete_inference(sample, gpu_list, iteration):
 
 
 if __name__ == '__main__':
-    gpu_list = list(range(8))
-    iteration = 400000
-    sample = 'A+'
-    complete_inference(sample, gpu_list, iteration)
+    for sample in ('A', 'B', 'C'):
+        gpu_list = list(range(8))
+        iteration = 400000
+        complete_inference(sample, gpu_list, iteration)

@@ -8,10 +8,8 @@ from simpleference.backends.gunpowder.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu, iteration):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s.n5' % sample
-
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/gp_tf_predictions_iter_%i' % iteration
-    out_file = os.path.join(out_file, 'cremi_warped_sample%s_prediction_.n5' % sample)
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities.n5' % sample
     assert os.path.exists(out_file)
 
     meta_graph = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf/unet_default/unet_checkpoint_%i' % iteration
