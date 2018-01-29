@@ -4,10 +4,6 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from subprocess import call
 
-
-sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/nnets/simpleference')
-from simpleference.inference.util import get_offset_lists
-
 sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld/python')
 import z5py
 
@@ -53,7 +49,8 @@ def complete_inference(gpu_list, iteration, gpu_offset):
 
 
 if __name__ == '__main__':
-    gpu_list = range(8)
+    # gpu_list = range(8)
+    gpu_list = [0, 2, 3, 4, 5, 6, 7]
     iteration = 400000
     gpu_offset = int(sys.argv[1])
     complete_inference(gpu_list, iteration, gpu_offset)
