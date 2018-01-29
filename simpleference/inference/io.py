@@ -47,13 +47,13 @@ class IoN5(object):
             self._write_all(out, out_bb)
 
     def _write_nn_affs(self, out, out_bb):
-        assert len(self.datasets) == 1
-        bb = (slice(None),) + out_bb
-        self.datasets[0][bb] = out
-
-    def _write_all(self, out, out_bb):
+        assert len(self.datasets) == 2
         self.datasets[0][out_bb] = (out[1] + out[2]) / 2.
         self.datasets[1][out_bb] = out[0]
+
+    def _write_all(self, out, out_bb):
+        bb = (slice(None),) + out_bb
+        self.datasets[0][bb] = out
 
     @property
     def shape(self):

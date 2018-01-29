@@ -2,29 +2,27 @@ import os
 import sys
 import time
 import json
+
 from simpleference.inference.inference import run_inference_n5
-from simpleference.backends.pytorch import PytorchPredict
+from simpleference.backends.pytorch import PyTorchPredict
 from simpleference.backends.pytorch.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu):
     raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
-    # TODO update out path
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities_pytorch_test.n5' % sample
     assert os.path.exists(out_file)
 
-    # TODO
-    nework_file = ''
+    model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch'
 
     offset_file = './offsets_sample%s/list_gpu_%i.json' % (sample, gpu)
     with open(offset_file, 'r') as f:
         offset_list = json.load(f)
 
-    input_shape = (84, 268, 268)
+    input_shape = (84, 270, 270)
     output_shape = (56, 56, 56)
-    # TODO cropping !!!
-    prediction = PytorchPredict(nework_file,
-                                crop=False)
+    prediction = PyTorchPredict(model_path,
+                                crop=output_shape)
 
     t_predict = time.time()
     run_inference_n5(prediction,

@@ -10,7 +10,7 @@ export USER_ID=${UID}
 GUNPOWDER_PATH=$(readlink -f $HOME/Work/my_projects/nnets/gunpowder)
 SIMPLEFERENCE_PATH=$(readlink -f $HOME/Work/my_projects/nnets/simpleference)
 PRED_PATH=$(readlink -f $HOME/Work/my_projects/nnets/simpleference/experiments/sampleE-tf)
-Z_PATH=$(readlink -f $HOME/Work/my_projects/z5/bld/python)
+Z_PATH=$(readlink -f $HOME/Work/my_projects/z5/bld27/python)
 
 nvidia-docker rm -f $NAME
 

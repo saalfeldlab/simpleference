@@ -7,22 +7,22 @@ from torch.autograd import Variable
 
 
 class PyTorchPredict(object):
-    def __init__(self, model_path, crop_prediction=None):
-        assert os.path.exists(model_path)
+    def __init__(self, model_path, crop=None):
+        assert os.path.exists(model_path), model_path
         self.model = torch.load(model_path, pickle_module=dill)
         # NOTE we always set CUDA_VISIBLE_DEVICES to our desired gpu
         # so we can always assume gpu 0 here
         self.gpu = 0
         self.model.cuda(self.gpu)
         # validate cropping
-        if crop_prediction is not None:
-            assert isinstance(crop_prediction, (list, tuple))
-            assert len(crop_prediction) == 3
-        self.crop_prediction = crop_prediction
+        if crop is not None:
+            assert isinstance(crop, (list, tuple))
+            assert len(crop) == 3
+        self.crop = crop
 
-    def crop(self, out):
+    def apply_crop(self, out):
         shape_diff = tuple((shape - crop) // 2
-                           for shape, crop in zip(out.shape, self.crop_prediction))
+                           for shape, crop in zip(out.shape, self.crop))
         bb = tuple(slice(diff, shape - diff) for diff, shape in zip(shape_diff, out.shape))
         return out[bb]
 
@@ -30,7 +30,7 @@ class PyTorchPredict(object):
         assert isinstance(input_data, np.ndarray)
         assert input_data.ndim == 3
         torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu))
-        out = self.model(torch_data).cpu().numpy().squeeze()
-        if self.crop_prediction is not None:
-            out = self.crop(out)
+        out = self.model(torch_data).cpu().data.numpy().squeeze()
+        if self.crop is not None:
+            out = self.apply_crop(out)
         return out

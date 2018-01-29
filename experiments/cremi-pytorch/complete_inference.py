@@ -6,7 +6,7 @@ from subprocess import call
 
 sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/nnets/simpleference')
 from simpleference.inference.util import get_offset_lists
-sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld27/python')
+sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld/python')
 import z5py
 
 
@@ -25,8 +25,7 @@ def complete_inference(sample,
 
     # create the datasets
     out_shape = (56,) * 3
-    # FIXME change out file
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities_pytorch_test.n5' % sample
 
     # the n5 file might exist already
     if not os.path.exists(out_file):
