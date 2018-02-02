@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import z5py
 import h5py
 import numpy as np
 from shutil import rmtree
@@ -111,21 +112,16 @@ def run_inference_n5(prediction,
                      rejection_criterion=None,
                      padding_mode='reflect'):
 
-    import z5py
-
-    assert callable(prediction)
     assert os.path.exists(raw_path)
     assert len(output_shape) == len(input_shape)
-
-    if rejection_criterion is not None:
-        assert callable(rejection_criterion)
 
     n_blocks = len(offset_list)
     print("Starting prediction for data %s." % raw_path)
     print("For %i number of blocks" % n_blocks)
 
     # the additional context requested in the input
-    context = np.array([input_shape[i] - output_shape[i] for i in range(len(input_shape))]) / 2
+    context = np.array([input_shape[i] - output_shape[i]
+                        for i in range(len(input_shape))]) / 2
     context = context.astype('uint32')
 
     # create out file and read in file
@@ -139,15 +135,10 @@ def run_inference_n5(prediction,
     ds_z = g['affs_z']
 
     # iterate over all the offsets, get the input data and predict
-    for ii, offset in enumerate(offset_list):
+    for offset in offset_list:
 
-        print("Predicting block", ii, "/", n_blocks)
-        data = load_input(ds, offset, context, output_shape, padding_mode=padding_mode)
-
-        if rejection_criterion is not None:
-            if rejection_criterion(data):
-                print("Rejecting block", ii, "/", n_blocks)
-                continue
+        data = load_input(ds, offset, context, output_shape,
+                          padding_mode=padding_mode)
 
         out = prediction(preprocess(data))
 
@@ -155,12 +146,12 @@ def run_inference_n5(prediction,
         stops = [off + outs for off, outs in zip(offset, out.shape[1:])]
 
         if any(stop > dim_size for stop, dim_size in zip(stops, shape)):
-            print("Remove Padding")
-            bb = (slice(None), ) + tuple(slice(0, dim_size - off if stop > dim_size else None)
-                                         for stop, dim_size, off in zip(stops, shape, offset))
-            print(bb)
+            bb = ((slice(None),) +
+                  tuple(slice(0, dim_size - off if stop > dim_size else None)
+                        for stop, dim_size, off in zip(stops, shape, offset)))
             out = out[bb]
 
-        out_bb = tuple(slice(off, off + outs) for off, outs in zip(offset, output_shape))
+        out_bb = tuple(slice(off, off + outs)
+                       for off, outs in zip(offset, output_shape))
         ds_xy[out_bb] = (out[1] + out[2]) / 2.
         ds_z[out_bb] = out[0]
