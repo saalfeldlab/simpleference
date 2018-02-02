@@ -18,7 +18,7 @@ def complete_inference(sample,
                        gpu_list):
 
     # path to the raw data
-    raw_path = os.path.expanduser('~/data/sample%s_raw.n5' % sample)
+    raw_path = os.path.expanduser('~/data/cremi_sample%s.n5' % sample)
     rf = z5py.File(raw_path, use_zarr_format=False)
     shape = rf['data'].shape
 
