@@ -145,7 +145,7 @@ def run_inference_n5(prediction,
     preprocess = dask.delayed(preprocess)
     predict = dask.delayed(prediction)
 
-    @dask.delayed
+    @dask.delayed(nout=2)
     def verify_shape(offset, output):
         # crop if necessary
         stops = [off + outs for off, outs in zip(offset, output.shape[1:])]
@@ -174,6 +174,6 @@ def run_inference_n5(prediction,
         result = write_output(output_crop, output_bounding_box)
         results.append(result)
 
-    get = functools.partial(dask.threaded.get, num_workers=num_cpu)
+    get = functools.partial(dask.threaded.get, num_workers=num_cpus)
     success = dask.compute(results, get=get)
     print(f'Ran {sum(success)} jobs')
