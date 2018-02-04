@@ -1,21 +1,28 @@
 from __future__ import print_function
 import sys
 import os
-from concurrent.futures import ProcessPoolExecutor
-from subprocess import call
+#from concurrent.futures import ProcessPoolExecutor
+#from subprocess import call
 
-sys.path.append(os.path.expanduser('~/projects/simpleference'))
+# manipulate the path to include unreleased projects
+user = os.path.expanduser
+sys.path.append(user('~/projects/simpleference'))
+sys.path.append(user('~/projects/inferno'))
+sys.path.append(user('~/projects/neurofire'))
+sys.path.append(user('~/projects/neuro-skunkworks'))
+
 from simpleference.inference.util import get_offset_lists
+from run_inference import single_gpu_inference
 import z5py
 
 
 def single_inference(sample, gpu):
-    call(['./run_inference.sh', sample, str(gpu)])
+    #call(['./run_inference.sh', sample, str(gpu)])
+    single_gpu_inference(sample, gpu)
     return True
 
 
-def complete_inference(sample,
-                       gpu_list):
+def complete_inference(sample, gpu_list):
 
     # path to the raw data
     raw_path = os.path.expanduser('~/data/cremi_sample%s.n5' % sample)
@@ -24,7 +31,7 @@ def complete_inference(sample,
 
     # create the datasets
     out_shape = (56,) * 3
-    out_file = os.path.expanduser('~/sample%s_affinities_pytorch_test.n5'
+    out_file = os.path.expanduser('~/data/sample%s_affinities_pytorch_test.n5'
                                   % sample)
 
     # the n5 file might exist already
@@ -45,9 +52,10 @@ def complete_inference(sample,
     get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
     # run multiprocessed inference
-    with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
-        tasks = [pp.submit(single_inference, sample, gpu) for gpu in gpu_list]
-        result = [t.result() for t in tasks]
+    #with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
+    #    tasks = [pp.submit(single_inference, sample, gpu) for gpu in gpu_list]
+    #    result = [t.result() for t in tasks]
+    result = [single_inference(sample, gpu_list[0])]
 
     if all(result):
         print("All gpu's finished inference properly.")
