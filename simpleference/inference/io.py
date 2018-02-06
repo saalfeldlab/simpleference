@@ -31,10 +31,10 @@ class IoN5(object):
         self.save_only_nn_affs = save_only_nn_affs
         self.keys = keys
         self.ff = z5py.File(self.path, use_zarr_format=False)
-        assert all(kk in self.ff for kk in self.keys)
+        assert all(kk in self.ff for kk in self.keys), "%s, %s" % (self.path, self.keys)
         self.datasets = [self.ff[kk] for kk in self.keys]
         # we just assume that everything has the same shape...
-        self.shape = self.datasets[0].shape
+        self._shape = self.datasets[0].shape
 
     def read(self, bounding_box):
         assert len(self.datasets) == 1
@@ -57,7 +57,7 @@ class IoN5(object):
 
     @property
     def shape(self):
-        return self.shape
+        return self._shape
 
     def close(self):
         pass
@@ -69,7 +69,7 @@ class IoHDF5(object):
         self.path = path
         self.ff = h5py.File(self.path)
         self.ds = self.ff[key]
-        self.shape = self.ds.shape
+        self._shape = self.ds.shape
 
     def read(self, bb):
         return self.ds[bb]
@@ -80,7 +80,7 @@ class IoHDF5(object):
 
     @property
     def shape(self):
-        return self.shape
+        return self._shape
 
     def close(self):
         self.ff.close()
@@ -96,7 +96,7 @@ class IoDVID(object):
         endpoint = "/" + self.key + "/info"
         attributes = self.ds.custom_request(endpoint, "", ConnectionMethod.GET)
         # TODO do we need to increase by 1 here
-        self.shape = tuple(mp + 1 for mp in attributes["MaxPoint"])
+        self._shape = tuple(mp + 1 for mp in attributes["MaxPoint"])
 
     def read(self, bb):
         offset = tuple(b.start for b in bb)
@@ -108,7 +108,7 @@ class IoDVID(object):
 
     @property
     def shape(self):
-        return self.shape
+        return self._shape
 
     def close(self):
         pass
