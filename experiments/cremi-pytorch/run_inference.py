@@ -3,17 +3,18 @@ import sys
 import time
 import json
 
+from os.path import expanduser as user
+
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.pytorch import PyTorchPredict
 from simpleference.backends.pytorch.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities_pytorch_test.n5' % sample
-    assert os.path.exists(out_file)
+    raw_path = user('~/data/cremi_sample%s.n5' % sample)
+    out_file = user('~/data/sample%s_affinities_pytorch_test.n5' % sample)
 
-    model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch'
+    model_path = user('~/data/model.pytorch')
 
     offset_file = './offsets_sample%s/list_gpu_%i.json' % (sample, gpu)
     with open(offset_file, 'r') as f:
