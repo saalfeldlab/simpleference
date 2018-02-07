@@ -34,6 +34,7 @@ class PyTorchPredict(object):
         with self.lock:
             torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu),
                                   volatile=True)
+            print('predicting a block!')
             out = self.model(torch_data).cpu().data.numpy().squeeze()
         if self.crop is not None:
             out = self.apply_crop(out)

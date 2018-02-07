@@ -140,6 +140,7 @@ def run_inference_n5(prediction,
 
     @dask.delayed
     def load_offset(offset):
+        print('loading offset %s' % offset)
         return load_input(ds, offset, context, output_shape,
                           padding_mode=padding_mode)
     preprocess = dask.delayed(preprocess)
@@ -158,10 +159,12 @@ def run_inference_n5(prediction,
 
         output_bounding_box = tuple(slice(off, off + outs)
                                     for off, outs in zip(offset, output_shape))
+        print('done verifying shape')
         return output, output_bounding_box
 
     @dask.delayed
     def write_output(output, output_bounding_box):
+        print('writing output at %s' % output_bounding_box)
         ds_xy[output_bounding_box] = (output[1] + output[2]) / 2.
         ds_z[output_bounding_box] = output[0]
         return 1
