@@ -4,6 +4,7 @@ import numpy as np
 import dill
 import torch
 from torch.autograd import Variable
+import threading
 
 
 class PyTorchPredict(object):
@@ -19,6 +20,7 @@ class PyTorchPredict(object):
             assert isinstance(crop, (list, tuple))
             assert len(crop) == 3
         self.crop = crop
+        self.lock = threading.Lock()
 
     def apply_crop(self, out):
         shape_diff = tuple((shape - crop) // 2
@@ -29,9 +31,10 @@ class PyTorchPredict(object):
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
         assert input_data.ndim == 3
-        torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu),
-                              volatile=True)
-        out = self.model(torch_data).cpu().data.numpy().squeeze()
+        with self.lock:
+            torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu),
+                                  volatile=True)
+            out = self.model(torch_data).cpu().data.numpy().squeeze()
         if self.crop is not None:
             out = self.apply_crop(out)
         return out
