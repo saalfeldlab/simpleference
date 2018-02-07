@@ -8,12 +8,12 @@ import threading
 
 
 class PyTorchPredict(object):
-    def __init__(self, model_path, crop=None):
+    def __init__(self, model_path, crop=None, gpu=0):
         assert os.path.exists(model_path), model_path
         self.model = torch.load(model_path, pickle_module=dill)
         # NOTE we always set CUDA_VISIBLE_DEVICES to our desired gpu
         # so we can always assume gpu 0 here
-        self.gpu = 0
+        self.gpu = gpu
         self.model.cuda(self.gpu)
         # validate cropping
         if crop is not None:
