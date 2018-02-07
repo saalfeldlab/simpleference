@@ -175,5 +175,6 @@ def run_inference_n5(prediction,
         results.append(result)
 
     get = functools.partial(dask.threaded.get, num_workers=num_cpus)
+    print(f'We have {len(results)} tasks waiting to complete.')
     success = dask.compute(results, get=get)
     print(f'Ran {sum(success)} jobs')
