@@ -25,13 +25,13 @@ def single_inference(sample, gpu):
 def complete_inference(sample, gpu_list):
 
     # path to the raw data
-    raw_path = os.path.expanduser('~/data/cremi_sample%s.n5' % sample)
+    raw_path = os.path.expanduser('~/data/cremi_sample%s_sub.n5' % sample)
     rf = z5py.File(raw_path, use_zarr_format=False)
     shape = rf['data'].shape
 
     # create the datasets
-    out_shape = (56,) * 3
-    out_file = os.path.expanduser('~/data/sample%s_affinities_pytorch_test.n5'
+    out_shape = (52, 42, 92)
+    out_file = os.path.expanduser('~/data/sample%s_affinities_pytorch_sub.n5'
                                   % sample)
 
     # the n5 file might exist already
@@ -48,7 +48,7 @@ def complete_inference(sample, gpu_list):
 
     # make the offset files, that assign blocks to gpus
     save_folder = './offsets_sample%s' % sample
-    output_shape = (56, 56, 56)
+    output_shape = (52, 42, 92)
     get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
     # run multiprocessed inference
