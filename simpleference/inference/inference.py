@@ -164,7 +164,8 @@ def run_inference_n5(prediction,
 
     @dask.delayed
     def write_output(output, output_bounding_box):
-        print('writing output at %s' % output_bounding_box)
+        print('writing output at %s' % [(s.start, s.stop) for s in
+                                        output_bounding_box])
         ds_xy[output_bounding_box] = (output[1] + output[2]) / 2.
         ds_z[output_bounding_box] = output[0]
         return 1
