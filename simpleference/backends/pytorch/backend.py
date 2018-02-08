@@ -29,7 +29,8 @@ class PyTorchPredict(object):
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
         assert input_data.ndim == 3
-        torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu))
+        torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu),
+                              volatile=True)
         out = self.model(torch_data).cpu().data.numpy().squeeze()
         if self.crop is not None:
             out = self.apply_crop(out)
