@@ -180,5 +180,10 @@ def run_inference_n5(prediction,
 
     get = functools.partial(dask.threaded.get, num_workers=num_cpus)
     print(f'We have {len(results)} tasks waiting to complete.')
-    success = dask.compute(results, get=get)
+    # NOTE: Because dask.compute doesn't take an argument, but rather an
+    # arbitrary number of arguments, computing each in turn, the output of
+    # dask.compute(results) is a tuple of length 1, with its only element
+    # being the results list. If instead we pass the results list as *args,
+    # we get the desired container of results at the end.
+    success = dask.compute(*results, get=get)
     print(f'Ran {sum(success)} jobs')
