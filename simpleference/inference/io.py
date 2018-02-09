@@ -52,7 +52,7 @@ class IoN5(object):
         self.datasets[1][out_bb] = out[0]
 
     def _write_all(self, out, out_bb):
-        bb = (slice(None),) + out_bb
+        bb = (slice(None),) + out_bb if out.ndim == 4 else out_bb
         self.datasets[0][bb] = out
 
     @property

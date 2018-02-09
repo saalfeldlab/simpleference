@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import threading
 
 # we try to use the tensorflow from gunpowder,
 # otherwise we try to revert to normal tensorflow
@@ -38,9 +39,17 @@ class TensorflowPredict(object):
         with self.graph.as_default():
             self._read_meta_graph()
 
+        self.lock = threading.Lock()
+
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
-        output = self.session.run(self.output_key, feed_dict={self.input_key: input_data})
+
+        # we need to lock the inference on the gpu to prevent dask from running multiple predictions in
+        # parallel. It might be beneficial, to only lock the inference step, but not to lock
+        # shipping data onto / from the gpu.
+        # Unfortunately I don't now how to do this in tf.
+        with self.lock:
+            output = self.session.run(self.output_key, feed_dict={self.input_key: input_data})
 
         assert isinstance(output, np.ndarray)
         if output.ndim == 5:
