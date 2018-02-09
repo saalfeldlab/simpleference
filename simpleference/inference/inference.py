@@ -83,8 +83,9 @@ def run_inference(prediction,
                   offset_list,
                   input_shape,
                   output_shape,
-                  padding_mode='reflect',
-                  num_cpus=4):
+                  gpu_list,
+                  num_cpus,
+                  padding_mode='reflect'):
 
     assert callable(prediction)
     assert callable(preprocess)
@@ -105,6 +106,7 @@ def run_inference(prediction,
     def load_offset(offset):
         return load_input(io_in, offset, context, output_shape,
                           padding_mode=padding_mode)
+
     preprocess = dask.delayed(preprocess)
     predict = dask.delayed(prediction)
 
@@ -144,3 +146,7 @@ def run_inference(prediction,
     # we get the desired container of results at the end.
     success = dask.compute(*results, get=get)
     print(f'Ran {sum(success)} jobs')
+
+    # tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
+    # result = compute(*tasks, traverse=False,
+    #                  get=threaded.get, num_workers=len(gpu_list))
