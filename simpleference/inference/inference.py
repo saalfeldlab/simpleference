@@ -1,7 +1,11 @@
 from __future__ import print_function
 import os
+import z5py
 import h5py
 import numpy as np
+import dask
+import toolz as tz
+import functools
 from shutil import rmtree
 
 
@@ -109,23 +113,19 @@ def run_inference_n5(prediction,
                      output_shape,
                      input_key='data',
                      rejection_criterion=None,
-                     padding_mode='reflect'):
+                     padding_mode='reflect',
+                     num_cpus=2):
 
-    import z5py
-
-    assert callable(prediction)
     assert os.path.exists(raw_path)
     assert len(output_shape) == len(input_shape)
-
-    if rejection_criterion is not None:
-        assert callable(rejection_criterion)
 
     n_blocks = len(offset_list)
     print("Starting prediction for data %s." % raw_path)
     print("For %i number of blocks" % n_blocks)
 
     # the additional context requested in the input
-    context = np.array([input_shape[i] - output_shape[i] for i in range(len(input_shape))]) / 2
+    context = np.array([input_shape[i] - output_shape[i]
+                        for i in range(len(input_shape))]) / 2
     context = context.astype('uint32')
 
     # create out file and read in file
@@ -138,29 +138,47 @@ def run_inference_n5(prediction,
     ds_xy = g['affs_xy']
     ds_z = g['affs_z']
 
-    # iterate over all the offsets, get the input data and predict
-    for ii, offset in enumerate(offset_list):
+    @dask.delayed
+    def load_offset(offset):
+        return load_input(ds, offset, context, output_shape,
+                          padding_mode=padding_mode)
+    preprocess = dask.delayed(preprocess)
+    predict = dask.delayed(prediction)
 
-        print("Predicting block", ii, "/", n_blocks)
-        data = load_input(ds, offset, context, output_shape, padding_mode=padding_mode)
-
-        if rejection_criterion is not None:
-            if rejection_criterion(data):
-                print("Rejecting block", ii, "/", n_blocks)
-                continue
-
-        out = prediction(preprocess(data))
-
+    @dask.delayed(nout=2)
+    def verify_shape(offset, output):
         # crop if necessary
-        stops = [off + outs for off, outs in zip(offset, out.shape[1:])]
+        stops = [off + outs for off, outs in zip(offset, output.shape[1:])]
 
         if any(stop > dim_size for stop, dim_size in zip(stops, shape)):
-            print("Remove Padding")
-            bb = (slice(None), ) + tuple(slice(0, dim_size - off if stop > dim_size else None)
-                                         for stop, dim_size, off in zip(stops, shape, offset))
-            print(bb)
-            out = out[bb]
+            bb = ((slice(None),) +
+                  tuple(slice(0, dim_size - off if stop > dim_size else None)
+                        for stop, dim_size, off in zip(stops, shape, offset)))
+            output = output[bb]
 
-        out_bb = tuple(slice(off, off + outs) for off, outs in zip(offset, output_shape))
-        ds_xy[out_bb] = (out[1] + out[2]) / 2.
-        ds_z[out_bb] = out[0]
+        output_bounding_box = tuple(slice(off, off + outs)
+                                    for off, outs in zip(offset, output_shape))
+        return output, output_bounding_box
+
+    @dask.delayed
+    def write_output(output, output_bounding_box):
+        ds_xy[output_bounding_box] = (output[1] + output[2]) / 2.
+        ds_z[output_bounding_box] = output[0]
+        return 1
+
+    # iterate over all the offsets, get the input data and predict
+    results = []
+    for offset in offset_list:
+        output = tz.pipe(offset, load_offset, preprocess, predict)
+        output_crop, output_bounding_box = verify_shape(offset, output)
+        result = write_output(output_crop, output_bounding_box)
+        results.append(result)
+
+    get = functools.partial(dask.threaded.get, num_workers=num_cpus)
+    # NOTE: Because dask.compute doesn't take an argument, but rather an
+    # arbitrary number of arguments, computing each in turn, the output of
+    # dask.compute(results) is a tuple of length 1, with its only element
+    # being the results list. If instead we pass the results list as *args,
+    # we get the desired container of results at the end.
+    success = dask.compute(*results, get=get)
+    print(f'Ran {sum(success)} jobs')

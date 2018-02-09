@@ -9,8 +9,8 @@ from simpleference.backends.pytorch.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities_pytorch_test.n5' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/torch_master_test_sample%s.n5' % sample
     assert os.path.exists(out_file)
 
     model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch'
@@ -22,7 +22,8 @@ def single_gpu_inference(sample, gpu):
     input_shape = (84, 270, 270)
     output_shape = (56, 56, 56)
     prediction = PyTorchPredict(model_path,
-                                crop=output_shape)
+                                crop=output_shape,
+                                gpu=gpu)
 
     t_predict = time.time()
     run_inference_n5(prediction,
@@ -30,12 +31,14 @@ def single_gpu_inference(sample, gpu):
                      raw_path,
                      out_file,
                      offset_list,
+                     input_key='raw',
                      input_shape=input_shape,
                      output_shape=output_shape)
     t_predict = time.time() - t_predict
 
     with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:
         f.write("Inference with gpu %i in %f s" % (gpu, t_predict))
+    return True
 
 
 if __name__ == '__main__':
