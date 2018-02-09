@@ -24,12 +24,21 @@ class TensorflowPredict(object):
         outputs (string): Name of the output layer.
     '''
 
+    # TODO add gpu number as argument
     def __init__(self,
-                 meta_graph_basename,
+                 weight_graph_basename,
+                 inference_graph_basename,
                  input_key,
                  output_key):
-        assert os.path.exists(meta_graph_basename + '.meta')
-        self.meta_graph_basename = meta_graph_basename
+        assert os.path.exists(weight_graph_basename + '.index')
+        # NOTE this seems a bit dubious, don't know if this is persistent
+        # for different tf models
+        # assert os.path.exists(weight_graph_basename + '.data-00000-of-00001')
+        self.weight_graph_basename = weight_graph_basename
+
+        assert os.path.exists(inference_graph_basename + '.meta')
+        self.inference_graph_basename = weight_graph_basename
+
         self.input_key = input_key
         self.output_key = output_key
 
@@ -59,10 +68,10 @@ class TensorflowPredict(object):
 
     def _read_meta_graph(self):
         # read the meta-graph
-        saver = tf.train.import_meta_graph(self.meta_graph_basename + '.meta',
+        saver = tf.train.import_meta_graph(self.inference_graph_basename + '.meta',
                                            clear_devices=True)
         # restore variables
-        saver.restore(self.session, self.meta_graph_basename)
+        saver.restore(self.session, self.weight_graph_basename)
 
     # Needs to be called in the end
     def stop(self):
