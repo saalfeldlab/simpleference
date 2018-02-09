@@ -22,6 +22,7 @@ except ImportError:
 
 
 class IoN5(object):
+    #todo: support multiple keys and mapping keys->out
     def __init__(self, path, keys, save_only_nn_affs=False):
         assert WITH_Z5PY, "Need z5py"
         assert len(keys) in (1, 2)
@@ -52,8 +53,7 @@ class IoN5(object):
         self.datasets[1][out_bb] = out[0]
 
     def _write_all(self, out, out_bb):
-        bb = (slice(None),) + out_bb if out.ndim == 4 else out_bb
-        self.datasets[0][bb] = out
+        self.datasets[0][out_bb] = out[0]
 
     @property
     def shape(self):

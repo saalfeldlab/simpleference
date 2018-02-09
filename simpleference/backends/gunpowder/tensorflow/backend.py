@@ -37,7 +37,7 @@ class TensorflowPredict(object):
         self.weight_graph_basename = weight_graph_basename
 
         assert os.path.exists(inference_graph_basename + '.meta')
-        self.inference_graph_basename = weight_graph_basename
+        self.inference_graph_basename = inference_graph_basename
 
         self.input_key = input_key
         self.output_key = output_key
