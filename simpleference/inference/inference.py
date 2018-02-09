@@ -41,7 +41,7 @@ def load_input(io, offset, context, output_shape, padding_mode='reflect'):
     return data
 
 
-def run_inference_n5(prediction,
+def run_inference_n5(predicters,
                      preprocess,
                      raw_path,
                      save_file,
@@ -51,7 +51,7 @@ def run_inference_n5(prediction,
                      input_key='data',
                      padding_mode='reflect',
                      only_nn_affs=False,
-                     num_cpus=4):
+                     num_workers_per_gpu=4):
 
     assert os.path.exists(raw_path)
     assert os.path.exists(raw_path)
@@ -66,9 +66,15 @@ def run_inference_n5(prediction,
     # seperately.
     keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
     io_out = IoN5(save_file, keys, save_only_nn_affs=only_nn_affs)
-    run_inference(prediction, preprocess, io_in, io_out, offset_list,
-                  input_shape, output_shape, padding_mode=padding_mode,
-                  num_cpus=num_cpus)
+    run_inference(predicters,
+                  preprocess,
+                  io_in,
+                  io_out,
+                  offset_list,
+                  input_shape,
+                  output_shape,
+                  num_workers_per_gpu=num_workers_per_gpu,
+                  padding_mode=padding_mode)
     # This is not necessary for n5 datasets
     # which do not need to be closed, but we leave it here for
     # reference when using other (hdf5) io wrappers
@@ -76,20 +82,24 @@ def run_inference_n5(prediction,
     io_out.close()
 
 
-def run_inference(prediction,
+def run_inference(predicters,
                   preprocess,
                   io_in,
                   io_out,
                   offset_list,
                   input_shape,
                   output_shape,
-                  gpu_list,
-                  num_cpus,
+                  num_workers_per_gpu=4,
                   padding_mode='reflect'):
 
-    assert callable(prediction)
+    assert isinstance(predicters, dict)
+    assert all(callable(predicter) for predicter in predicters.values())
     assert callable(preprocess)
     assert len(output_shape) == len(input_shape)
+
+    gpu_list = list(predicters.keys())
+    assert all(isinstance(gpu, int) for gpu in gpu_list)
+    n_gpus = len(gpu_list)
 
     n_blocks = len(offset_list)
     print("Starting prediction...")
@@ -106,9 +116,6 @@ def run_inference(prediction,
     def load_offset(offset):
         return load_input(io_in, offset, context, output_shape,
                           padding_mode=padding_mode)
-
-    preprocess = dask.delayed(preprocess)
-    predict = dask.delayed(prediction)
 
     @dask.delayed(nout=2)
     def verify_shape(offset, output):
@@ -129,24 +136,32 @@ def run_inference(prediction,
     def write_output(output, output_bounding_box):
         io_out.write(output, output_bounding_box)
         return 1
+    preprocess = dask.delayed(preprocess)
 
-    # iterate over all the offsets, get the input data and predict
-    results = []
-    for offset in offset_list:
+    delayed_predicters = {gpu: dask.delayed(predicters[gpu]) for gpu in gpu_list}
+    get = functools.partial(dask.threaded.get, num_workers=num_workers_per_gpu)
+
+    @dask.delayed
+    def infer_offset(offset, gpu, i):
+
+        print("Predicting block ", i, "/", len(offset_list), "on gpu", gpu)
+        predict = delayed_predicters[gpu]
         output = tz.pipe(offset, load_offset, preprocess, predict)
         output_crop, output_bounding_box = verify_shape(offset, output)
         result = write_output(output_crop, output_bounding_box)
-        results.append(result)
+        # NOTE: Because dask.compute doesn't take an argument, but rather an
+        # arbitrary number of arguments, computing each in turn, the output of
+        # dask.compute(results) is a tuple of length 1, with its only element
+        # being the results list. If instead we pass the results list as *args,
+        # we get the desired container of results at the end.
+        success = dask.compute(result, get=get)
+        return success
 
-    get = functools.partial(dask.threaded.get, num_workers=num_cpus)
-    # NOTE: Because dask.compute doesn't take an argument, but rather an
-    # arbitrary number of arguments, computing each in turn, the output of
-    # dask.compute(results) is a tuple of length 1, with its only element
-    # being the results list. If instead we pass the results list as *args,
-    # we get the desired container of results at the end.
-    success = dask.compute(*results, get=get)
-    print(f'Ran {sum(success)} jobs')
-
-    # tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
-    # result = compute(*tasks, traverse=False,
-    #                  get=threaded.get, num_workers=len(gpu_list))
+    # We want to parallelize inference in the following way:
+    # We have a list of offsets, that is mapped to the pool of gpus (each gpu has its own `predicter` instance)
+    # which process these offsets / tasks in parallel.
+    # each task itself can spawn `num_workers_per_gpu` threads to feed the gpu
+    tasks = [infer_offset(offset, gpu_list[ii % n_gpus], ii) for ii, offset in enumerate(offset_list)]
+    result = dask.compute(*tasks, traverse=False,
+                          get=dask.threaded.get, num_workers=len(gpu_list))
+    print(f'Ran {sum(result)} jobs')

@@ -23,6 +23,13 @@ def get_offset_lists(shape,
     if randomize:
         shuffle(in_list)
 
+    # FIXME dirty hack for new inference
+    if isinstance(gpu_list, int):
+        list_name = os.path.join(save_folder, 'list_gpu_%i.json' % gpu_list)
+        with open(list_name, 'w') as f:
+            json.dump(in_list, f)
+        return
+
     n_splits = len(gpu_list)
     out_list = [in_list[i::n_splits] for i in range(n_splits)]
 
@@ -49,7 +56,7 @@ def offset_list_from_precomputed(input_list,
         assert isinstance(input_list, list)
 
     if randomize:
-        shuffle(in_list)
+        shuffle(input_list)
 
     n_splits = len(gpu_list)
     out_list = [input_list[i::n_splits] for i in range(n_splits)]
@@ -68,7 +75,7 @@ def offset_list_from_precomputed(input_list,
 def stitch_prediction_blocks(save_path,
                              block_folder,
                              shape,
-                             key = 'data',
+                             key='data',
                              end_channel=None,
                              n_workers=8,
                              chunks=(1, 64, 64, 64)):
@@ -89,7 +96,6 @@ def stitch_prediction_blocks(save_path,
         bb = chan_slice + tuple(slice(off, off + block_shape[ii])
                                 for ii, off in enumerate(offsets))
         ds[bb] = block_data
-
 
     with h5py.File(save_path, 'w') as f:
         ds = f.create_dataset(key,

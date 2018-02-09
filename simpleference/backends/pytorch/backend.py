@@ -10,11 +10,11 @@ import threading
 class PyTorchPredict(object):
     def __init__(self, model_path, crop=None, gpu=0):
         assert os.path.exists(model_path), model_path
-        self.model = torch.load(model_path, pickle_module=dill)
-        # NOTE we always set CUDA_VISIBLE_DEVICES to our desired gpu
-        # so we can always assume gpu 0 here
+        # TODO make sure that the gpu is in the cuda vis devices
         self.gpu = gpu
-        self.model.cuda(self.gpu)
+        print("Loading model onto gpu", self.gpu)
+        self.model = torch.load(model_path, pickle_module=dill).cuda(self.gpu)
+
         # validate cropping
         if crop is not None:
             assert isinstance(crop, (list, tuple))
@@ -40,7 +40,6 @@ class PyTorchPredict(object):
             # 1. Transfer the data to the GPU
             torch_data = Variable(torch.from_numpy(input_data[None, None])
                                   .cuda(self.gpu), volatile=True)
-            print('predicting a block!')
             # 2. Run the model
             predicted_on_gpu = self.model(torch_data)
             # 3. Transfer the results to the CPU

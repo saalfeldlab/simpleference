@@ -1,10 +1,13 @@
 from __future__ import print_function
 import os
-import z5py
-from dask import delayed, compute, threaded
-from simpleference.inference.util import get_offset_lists
+import json
 
-from run_inference import single_gpu_inference
+import z5py
+
+from simpleference.inference.util import get_offset_lists
+from simpleference.inference.inference import run_inference_n5
+from simpleference.backends.pytorch import PyTorchPredict
+from simpleference.backends.pytorch.preprocess import preprocess
 
 
 def complete_inference(sample, gpu_list):
@@ -15,7 +18,8 @@ def complete_inference(sample, gpu_list):
     shape = rf['raw'].shape
 
     # create the datasets
-    out_shape = (56,) * 3
+    input_shape = (84, 270, 270)
+    output_shape = (56, 56, 56)
     out_file = '/groups/saalfeld/home/papec/torch_master_test_sample%s.n5' % sample
 
     # the n5 file might exist already
@@ -24,25 +28,30 @@ def complete_inference(sample, gpu_list):
         f.create_dataset('affs_xy', shape=shape,
                          compressor='gzip',
                          dtype='float32',
-                         chunks=out_shape)
+                         chunks=output_shape)
         f.create_dataset('affs_z', shape=shape,
                          compressor='gzip',
                          dtype='float32',
-                         chunks=out_shape)
+                         chunks=output_shape)
 
     # make the offset files, that assign blocks to gpus
     save_folder = './offsets_sample%s' % sample
     output_shape = (56, 56, 56)
-    get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
+    # FIXME dirty hack to get single offset list for a single gpu
+    get_offset_lists(shape, 1, save_folder, output_shape=output_shape)
+    offset_file = './offsets_sample%s/list_gpu_%i.json' % (sample, 0)
+    with open(offset_file, 'r') as f:
+        offset_list = json.load(f)
 
-    tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
-    result = compute(*tasks, traverse=False,
-                     get=threaded.get, num_workers=len(gpu_list))
-
-    if all(result):
-        print("All gpu's finished inference properly.")
-    else:
-        print("WARNING: at least one process didn't finish properly.")
+    model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire'
+    model_path = os.path.join(model_path, 'criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch')
+    predicters = {gpu: PyTorchPredict(model_path, crop=output_shape, gpu=gpu) for gpu in gpu_list}
+    run_inference_n5(predicters, preprocess,
+                     raw_path, out_file, offset_list,
+                     input_shape=input_shape,
+                     output_shape=output_shape,
+                     input_key='raw',
+                     only_nn_affs=True)
 
 
 if __name__ == '__main__':
