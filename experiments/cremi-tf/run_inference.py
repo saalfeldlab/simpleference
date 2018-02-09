@@ -8,9 +8,10 @@ from simpleference.backends.gunpowder.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu, iteration):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_raw.n5' % sample
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/train_samples/sample%s_affinities.n5' % sample
-    assert os.path.exists(out_file)
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s.n5' % sample
+    assert os.path.exists(raw_path), raw_path
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s_predictions.n5' % sample
+    assert os.path.exists(out_file), out_file
 
     meta_graph = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf/unet_default/unet_checkpoint_%i' % iteration
     net_io_json = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf/unet_default/net_io_names.json'
@@ -35,7 +36,8 @@ def single_gpu_inference(sample, gpu, iteration):
                      out_file,
                      offset_list,
                      input_shape=input_shape,
-                     output_shape=output_shape)
+                     output_shape=output_shape,
+                     only_nn_affs=True)
     t_predict = time.time() - t_predict
 
     with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:
