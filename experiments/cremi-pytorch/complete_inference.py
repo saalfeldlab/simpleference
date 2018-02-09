@@ -56,5 +56,5 @@ def complete_inference(sample, gpu_list):
 
 if __name__ == '__main__':
     for sample in ('A',):
-        gpu_list = [0]
+        gpu_list = list(range(8))
         complete_inference(sample, gpu_list)
