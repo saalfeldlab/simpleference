@@ -1,8 +1,7 @@
 from __future__ import print_function
 import os
 import z5py
-#from concurrent.futures import ProcessPoolExecutor
-#from subprocess import call
+from dask import delayed, compute, threaded
 
 # manipulate the path to include unreleased projects
 user = os.path.expanduser
@@ -13,12 +12,6 @@ sys.path.append(user('~/projects/neuro-skunkworks'))
 
 from run_inference import single_gpu_inference
 from simpleference.inference.util import get_offset_lists
-
-
-def single_inference(sample, gpu):
-    #call(['./run_inference.sh', sample, str(gpu)])
-    single_gpu_inference(sample, gpu)
-    return True
 
 
 def complete_inference(sample, gpu_list):
@@ -49,11 +42,9 @@ def complete_inference(sample, gpu_list):
     output_shape = (56, 56, 56)
     get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
-    # run multiprocessed inference
-    #with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
-    #    tasks = [pp.submit(single_inference, sample, gpu) for gpu in gpu_list]
-    #    result = [t.result() for t in tasks]
-    result = [single_inference(sample, gpu_list[0])]
+    tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
+    result = compute(*tasks, traverse=False,
+                     get=threaded.get, num_workers=len(gpu_list))
 
     if all(result):
         print("All gpu's finished inference properly.")
