@@ -114,7 +114,7 @@ def run_inference_n5(prediction,
                      input_key='data',
                      rejection_criterion=None,
                      padding_mode='reflect',
-                     num_cpus=2):
+                     num_cpus=3):
 
     assert os.path.exists(raw_path)
     assert len(output_shape) == len(input_shape)
