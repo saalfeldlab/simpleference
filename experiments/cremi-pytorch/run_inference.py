@@ -10,10 +10,11 @@ from simpleference.backends.pytorch.preprocess import preprocess
 
 def single_gpu_inference(sample, gpu):
     raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
-    out_file = '/groups/saalfeld/home/papec/torch_master_test_sample%s.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/inference_tests/torch_master_test_sample%s.n5' % sample
     assert os.path.exists(out_file)
 
-    model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch'
+    model_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire'
+    model_path = os.path.join(model_path, 'criteria_exps/sorensen_dice_unweighted/Weights/networks/model.pytorch')
 
     offset_file = './offsets_sample%s/list_gpu_%i.json' % (sample, gpu)
     with open(offset_file, 'r') as f:
@@ -32,6 +33,7 @@ def single_gpu_inference(sample, gpu):
                      out_file,
                      offset_list,
                      input_key='raw',
+                     target_keys=('affs_xy', 'affs_z'),
                      input_shape=input_shape,
                      output_shape=output_shape,
                      only_nn_affs=True)

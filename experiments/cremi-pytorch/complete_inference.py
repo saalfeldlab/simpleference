@@ -1,5 +1,4 @@
 from __future__ import print_function
-import os
 import z5py
 from dask import delayed, compute, threaded
 from simpleference.inference.util import get_offset_lists
@@ -16,17 +15,18 @@ def complete_inference(sample, gpu_list):
 
     # create the datasets
     out_shape = (56,) * 3
-    out_file = '/groups/saalfeld/home/papec/torch_master_test_sample%s.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/inference_tests/torch_master_test_sample%s.n5' % sample
 
     # the n5 file might exist already
-    if not os.path.exists(out_file):
-        f = z5py.File(out_file, use_zarr_format=False)
+    f = z5py.File(out_file, use_zarr_format=False)
+    if 'affs_xy' not in f:
         f.create_dataset('affs_xy', shape=shape,
-                         compressor='gzip',
+                         compression='gzip',
                          dtype='float32',
                          chunks=out_shape)
+    if 'affs_z' not in f:
         f.create_dataset('affs_z', shape=shape,
-                         compressor='gzip',
+                         compression='gzip',
                          dtype='float32',
                          chunks=out_shape)
 

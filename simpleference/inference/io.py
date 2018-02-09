@@ -95,7 +95,7 @@ class IoDVID(object):
         # get the shape the dvid way...
         endpoint = "/" + self.key + "/info"
         attributes = self.ds.custom_request(endpoint, "", ConnectionMethod.GET)
-        # TODO do we need to increase by 1 here
+        # TODO do we need to increase by 1 here ?
         self._shape = tuple(mp + 1 for mp in attributes["MaxPoint"])
 
     def read(self, bb):
