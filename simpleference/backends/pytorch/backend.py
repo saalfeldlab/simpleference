@@ -31,11 +31,20 @@ class PyTorchPredict(object):
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
         assert input_data.ndim == 3
+        # Note: in the code that follows, the GPU is locked for the 3 steps:
+        # CPU -> GPU, GPU inference, GPU -> CPU. It may well be that we get
+        # better performance by only locking in step 2, or steps 1-2, or steps
+        # 2-3. We should perform this experiment and then choose the best
+        # option for our hardware (and then remove this comment! ;)
         with self.lock:
-            torch_data = Variable(torch.from_numpy(input_data[None, None]).cuda(self.gpu),
-                                  volatile=True)
+            # 1. Transfer the data to the GPU
+            torch_data = Variable(torch.from_numpy(input_data[None, None])
+                                  .cuda(self.gpu), volatile=True)
             print('predicting a block!')
-            out = self.model(torch_data).cpu().data.numpy().squeeze()
+            # 2. Run the model
+            predicted_on_gpu = self.model(torch_data)
+            # 3. Transfer the results to the CPU
+            out = predicted_on_gpu.cpu().data.numpy().squeeze()
         if self.crop is not None:
             out = self.apply_crop(out)
         return out
