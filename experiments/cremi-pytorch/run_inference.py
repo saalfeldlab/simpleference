@@ -23,7 +23,8 @@ def single_gpu_inference(sample, gpu):
     input_shape = (84, 270, 270)
     output_shape = (56, 56, 56)
     prediction = PyTorchPredict(model_path,
-                                crop=output_shape)
+                                crop=output_shape,
+                                gpu=gpu)
 
     t_predict = time.time()
     run_inference_n5(prediction,
@@ -37,6 +38,7 @@ def single_gpu_inference(sample, gpu):
 
     with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:
         f.write("Inference with gpu %i in %f s" % (gpu, t_predict))
+    return True
 
 
 if __name__ == '__main__':
