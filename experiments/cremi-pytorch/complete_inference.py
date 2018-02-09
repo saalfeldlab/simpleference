@@ -1,28 +1,31 @@
 from __future__ import print_function
 import os
-from concurrent.futures import ProcessPoolExecutor
-from subprocess import call
+import sys
 
 import z5py
+from dask import delayed, compute, threaded
+
+# manipulate the path to include unreleased projects
+user = os.path.expanduser
+sys.path.append(user('~/projects/simpleference'))
+sys.path.append(user('~/projects/inferno'))
+sys.path.append(user('~/projects/neurofire'))
+sys.path.append(user('~/projects/neuro-skunkworks'))
+
 from simpleference.inference.util import get_offset_lists
+from run_inference import single_gpu_inference
 
 
-def single_inference(sample, gpu):
-    call(['./run_inference.sh', sample, str(gpu)])
-    return True
-
-
-def complete_inference(sample,
-                       gpu_list):
+def complete_inference(sample, gpu_list):
 
     # path to the raw data
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
+    raw_path = os.path.expanduser('~/data/cremi_sample%s.n5' % sample)
     rf = z5py.File(raw_path, use_zarr_format=False)
     shape = rf['raw'].shape
 
     # create the datasets
     out_shape = (56,) * 3
-    out_file = '/groups/saalfeld/home/papec/torch_master_test_sample%s.n5' % sample
+    out_file = user('~/data/sample%s_affinities_pytorch_test.n5' % sample)
 
     # the n5 file might exist already
     if not os.path.exists(out_file):
@@ -41,10 +44,9 @@ def complete_inference(sample,
     output_shape = (56, 56, 56)
     get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
-    # run multiprocessed inference
-    with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
-        tasks = [pp.submit(single_inference, sample, gpu) for gpu in gpu_list]
-        result = [t.result() for t in tasks]
+    tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
+    result = compute(*tasks, traverse=False,
+                     get=threaded.get, num_workers=len(gpu_list))
 
     if all(result):
         print("All gpu's finished inference properly.")
@@ -53,6 +55,6 @@ def complete_inference(sample,
 
 
 if __name__ == '__main__':
-    for sample in ('A+',):
-        gpu_list = [3, 4, 5, 6, 7]
+    for sample in ('A',):
+        gpu_list = list(range(8))
         complete_inference(sample, gpu_list)
