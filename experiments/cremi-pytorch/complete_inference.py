@@ -2,16 +2,9 @@ from __future__ import print_function
 import os
 import z5py
 from dask import delayed, compute, threaded
-
-# manipulate the path to include unreleased projects
-user = os.path.expanduser
-sys.path.append(user('~/projects/simpleference'))
-sys.path.append(user('~/projects/inferno'))
-sys.path.append(user('~/projects/neurofire'))
-sys.path.append(user('~/projects/neuro-skunkworks'))
+from simpleference.inference.util import get_offset_lists
 
 from run_inference import single_gpu_inference
-from simpleference.inference.util import get_offset_lists
 
 
 def complete_inference(sample, gpu_list):
@@ -54,5 +47,5 @@ def complete_inference(sample, gpu_list):
 
 if __name__ == '__main__':
     for sample in ('A+',):
-        gpu_list = [3, 4, 5, 6, 7]
+        gpu_list = list(range(8))
         complete_inference(sample, gpu_list)
