@@ -48,6 +48,7 @@ def run_inference_n5(prediction,
                      offset_list,
                      input_shape,
                      output_shape,
+                     target_keys,
                      input_key='data',
                      padding_mode='reflect',
                      only_nn_affs=False,
@@ -56,6 +57,8 @@ def run_inference_n5(prediction,
     assert os.path.exists(raw_path)
     assert os.path.exists(raw_path)
     assert os.path.exists(save_file)
+    if  isinstance(target_keys, str):
+        target_keys = (target_keys,)
     # The N5 IO/Wrapper needs iterables as keys
     # so we wrap the input key in a list.
     # Note that this is not the case for the hdf5 wrapper,
@@ -64,8 +67,8 @@ def run_inference_n5(prediction,
     # This is specific to the N5 datasets, where I have implemented
     # averaging over nearest neighbor xy-affinities and z affinities
     # seperately.
-    keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
-    io_out = IoN5(save_file, keys, save_only_nn_affs=only_nn_affs)
+    #keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
+    io_out = IoN5(save_file, target_keys, save_only_nn_affs=only_nn_affs)
     run_inference(prediction, preprocess, io_in, io_out, offset_list,
                   input_shape, output_shape, padding_mode=padding_mode,
                   num_cpus=num_cpus)
@@ -143,4 +146,4 @@ def run_inference(prediction,
     # being the results list. If instead we pass the results list as *args,
     # we get the desired container of results at the end.
     success = dask.compute(*results, get=get)
-    print(f'Ran {sum(success)} jobs')
+    print('Ran {0:} jobs'.format(sum(success)))
