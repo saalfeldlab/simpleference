@@ -48,16 +48,17 @@ def run_inference_n5(prediction,
                      offset_list,
                      input_shape,
                      output_shape,
+                     input_key,
                      target_keys,
-                     input_key='data',
                      padding_mode='reflect',
                      only_nn_affs=False,
-                     num_cpus=4):
+                     full_affinities=False,
+                     num_cpus=10):
 
     assert os.path.exists(raw_path)
     assert os.path.exists(raw_path)
     assert os.path.exists(save_file)
-    if  isinstance(target_keys, str):
+    if isinstance(target_keys, str):
         target_keys = (target_keys,)
     # The N5 IO/Wrapper needs iterables as keys
     # so we wrap the input key in a list.
@@ -67,8 +68,10 @@ def run_inference_n5(prediction,
     # This is specific to the N5 datasets, where I have implemented
     # averaging over nearest neighbor xy-affinities and z affinities
     # seperately.
-    #keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
-    io_out = IoN5(save_file, target_keys, save_only_nn_affs=only_nn_affs)
+    # keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
+    io_out = IoN5(save_file, target_keys,
+                  save_only_nn_affs=only_nn_affs,
+                  full_affinities=full_affinities)
     run_inference(prediction, preprocess, io_in, io_out, offset_list,
                   input_shape, output_shape, padding_mode=padding_mode,
                   num_cpus=num_cpus)

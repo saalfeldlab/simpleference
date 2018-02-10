@@ -20,5 +20,5 @@ nvidia-docker run --rm \
     -v /groups/saalfeld/home/papec:/groups/saalfeld/home/papec \
     -w /workspace \
     --name $NAME \
-    funkey/gunpowder:v0.3-pre5 \
+    neptunes5thmoon/gunpowder:v0.3-debug \
     /bin/bash -c "export CUDA_VISIBLE_DEVICES=$2; PYTHONPATH=${GUNPOWDER_PATH}:${SIMPLEFERENCE_PATH}:${Z_PATH}:\$PYTHONPATH; python -u ${PRED_PATH}/run_inference.py $1 $2 $3"

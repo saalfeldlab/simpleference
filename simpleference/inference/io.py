@@ -22,14 +22,19 @@ except ImportError:
 
 
 class IoN5(object):
-    #todo: support multiple keys and mapping keys->out
-    def __init__(self, path, keys, save_only_nn_affs=False):
+    # TODO: support multiple keys and mapping keys->out
+    # FIXME currently we hack this with the `save_only_nn_affs` mode
+    #       and the `full_affinities` mode
+    def __init__(self, path, keys,
+                 save_only_nn_affs=False,
+                 full_affinities=False):
         assert WITH_Z5PY, "Need z5py"
         assert len(keys) in (1, 2)
         self.path = path
         if save_only_nn_affs:
             assert len(keys) == 2
         self.save_only_nn_affs = save_only_nn_affs
+        self.full_affinities = full_affinities
         self.keys = keys
         self.ff = z5py.File(self.path, use_zarr_format=False)
         assert all(kk in self.ff for kk in self.keys), "%s, %s" % (self.path, self.keys)
@@ -53,7 +58,13 @@ class IoN5(object):
         self.datasets[1][out_bb] = out[0]
 
     def _write_all(self, out, out_bb):
-        self.datasets[0][out_bb] = out[0]
+        # we always get 4 dimensional out here,
+        # however it maybe single channel
+        assert out.ndim == 4
+        if self.full_affinities:
+            self.datasets[0][(slice(None),) + out_bb] = out
+        else:
+            self.datasets[0][out_bb] = out[0]
 
     @property
     def shape(self):

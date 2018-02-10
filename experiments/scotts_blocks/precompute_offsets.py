@@ -1,16 +1,19 @@
 import sys
 import json
 import os
+import hashlib
 from itertools import chain
 from concurrent import futures
 import numpy as np
-sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld27/python')
+
+sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld/python')
 import z5py
 
 
 def precompute_offset_list(path, output_shape, n_threads=40):
-    mhash = hash(path)
-    tmp_path = 'precomputed_list_%i.json' % mhash
+
+    mhash = hashlib.md5(path.encode('utf-8')).hexdigest()
+    tmp_path = 'precomputed_list_%s.json' % mhash
     # load the list if we have already computed it
     if os.path.exists(tmp_path):
         with open(tmp_path, 'r') as f:

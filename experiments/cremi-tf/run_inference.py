@@ -8,13 +8,15 @@ from simpleference.backends.gunpowder.preprocess import preprocess
 
 
 def single_gpu_inference(sample, gpu, iteration):
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s.n5' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
     assert os.path.exists(raw_path), raw_path
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/n5/cremi_warped_sample%s_predictions.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
     assert os.path.exists(out_file), out_file
 
-    meta_graph = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf/unet_default/unet_checkpoint_%i' % iteration
-    net_io_json = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf/unet_default/net_io_names.json'
+    net_folder = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf'
+    graph_weights = os.path.join(net_folder, 'unet_default/unet_checkpoint_%i' % iteration)
+    graph_inference = os.path.join(net_folder, 'unet_default/unet_inference')
+    net_io_json = os.path.join(net_folder, 'unet_default/net_io_names.json')
     with open(net_io_json, 'r') as f:
         net_io_names = json.load(f)
 
@@ -24,9 +26,10 @@ def single_gpu_inference(sample, gpu, iteration):
 
     input_key = net_io_names["raw"]
     output_key = net_io_names["affs"]
-    input_shape = (84, 268, 268)
-    output_shape = (56, 56, 56)
-    prediction = TensorflowPredict(meta_graph,
+    input_shape = (88, 808, 808)
+    output_shape = (60, 596, 596)
+    prediction = TensorflowPredict(graph_weights,
+                                   graph_inference,
                                    input_key=input_key,
                                    output_key=output_key)
     t_predict = time.time()
@@ -35,9 +38,12 @@ def single_gpu_inference(sample, gpu, iteration):
                      raw_path,
                      out_file,
                      offset_list,
+                     input_key='raw',
+                     target_keys='predictions/full_affs',
                      input_shape=input_shape,
                      output_shape=output_shape,
-                     only_nn_affs=True)
+                     full_affinities=True,
+                     only_nn_affs=False)
     t_predict = time.time() - t_predict
 
     with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:

@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+import hashlib
 import os
 from concurrent.futures import ProcessPoolExecutor
 from subprocess import call
@@ -27,26 +28,27 @@ def complete_inference(path, gpu_list, iteration):
     shape = f['gray'].shape
 
     # create the datasets
-    out_shape = (56,) *3
+    output_shape = (60, 596, 596)
 
     # the n5 datasets might exist already
-    if not 'affs_xy' in f:
-        f.create_dataset('affs_xy', shape=shape,
-                         compressor='gzip',
+    if 'predictions/full_affs' not in f:
+
+        if 'predictions' not in f:
+            f.create_group('predictions')
+
+        chunks = (3,) + tuple(outs // 2 for outs in output_shape)
+        aff_shape = (12,) + shape
+        f.create_dataset('predictions/full_affs',
+                         shape=aff_shape,
+                         compression='gzip',
                          dtype='float32',
-                         chunks=out_shape)
-    if not 'affs_z' in f:
-        f.create_dataset('affs_z', shape=shape,
-                         compressor='gzip',
-                         dtype='float32',
-                         chunks=out_shape)
+                         chunks=chunks)
 
     # make the offset files, that assign blocks to gpus
-    output_shape = (56, 56, 56)
     # generate offset lists with mask
     offset_list = precompute_offset_list(path, output_shape)
-    mhash = hash(path)
-    offset_list_from_precomputed(offset_list, gpu_list, './offsets_%i' % mhash)
+    mhash = hashlib.md5(path.encode('utf-8')).hexdigest()
+    offset_list_from_precomputed(offset_list, gpu_list, './offsets_%s' % mhash)
 
     # run multiprocessed inference
     with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
@@ -62,5 +64,13 @@ def complete_inference(path, gpu_list, iteration):
 if __name__ == '__main__':
     gpu_list = list(range(8))
     iteration = 400000
-    path = sys.argv[1]
-    complete_inference(path, gpu_list, iteration)
+    paths = ['/nrs/saalfeld/lauritzen/01/workspace.n5/raw',
+             '/nrs/saalfeld/lauritzen/02/workspace.n5/raw',
+             '/nrs/saalfeld/lauritzen/02/workspace.n5/filtered',
+             '/nrs/saalfeld/lauritzen/03/workspace.n5/raw',
+             '/nrs/saalfeld/lauritzen/03/workspace.n5/filtered',
+             '/nrs/saalfeld/lauritzen/04/workspace.n5/raw',
+             '/nrs/saalfeld/lauritzen/04/workspace.n5/filtered'
+            ]
+    for path in paths:
+        complete_inference(path, gpu_list, iteration)
