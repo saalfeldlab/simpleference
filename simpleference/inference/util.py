@@ -49,7 +49,7 @@ def offset_list_from_precomputed(input_list,
         assert isinstance(input_list, list)
 
     if randomize:
-        shuffle(in_list)
+        shuffle(input_list)
 
     n_splits = len(gpu_list)
     out_list = [input_list[i::n_splits] for i in range(n_splits)]
