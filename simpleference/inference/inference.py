@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import json
 
 import numpy as np
 import dask
@@ -53,7 +54,8 @@ def run_inference_n5(prediction,
                      padding_mode='reflect',
                      only_nn_affs=False,
                      full_affinities=False,
-                     num_cpus=10):
+                     num_cpus=10,
+                     log_processed=None):
 
     assert os.path.exists(raw_path)
     assert os.path.exists(raw_path)
@@ -74,7 +76,7 @@ def run_inference_n5(prediction,
                   full_affinities=full_affinities)
     run_inference(prediction, preprocess, io_in, io_out, offset_list,
                   input_shape, output_shape, padding_mode=padding_mode,
-                  num_cpus=num_cpus)
+                  num_cpus=num_cpus, log_processed=log_processed)
     # This is not necessary for n5 datasets
     # which do not need to be closed, but we leave it here for
     # reference when using other (hdf5) io wrappers
@@ -90,11 +92,15 @@ def run_inference(prediction,
                   input_shape,
                   output_shape,
                   padding_mode='reflect',
-                  num_cpus=4):
+                  num_cpus=4,
+                  log_processed=None):
 
     assert callable(prediction)
     assert callable(preprocess)
     assert len(output_shape) == len(input_shape)
+
+    if log_processed is not None:
+        log_f = open(log_processed, 'a')
 
     n_blocks = len(offset_list)
     print("Starting prediction...")
@@ -134,10 +140,16 @@ def run_inference(prediction,
         io_out.write(output, output_bounding_box)
         return 1
 
+    @dask.delayed
+    def log(offset):
+        if log_processed is not None:
+            log_f.write(json.dumps(offset) + ', ')
+        return offset
+
     # iterate over all the offsets, get the input data and predict
     results = []
     for offset in offset_list:
-        output = tz.pipe(offset, load_offset, preprocess, predict)
+        output = tz.pipe(offset, log, load_offset, preprocess, predict)
         output_crop, output_bounding_box = verify_shape(offset, output)
         result = write_output(output_crop, output_bounding_box)
         results.append(result)
