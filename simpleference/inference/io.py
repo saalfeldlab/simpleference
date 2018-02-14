@@ -22,49 +22,37 @@ except ImportError:
 
 
 class IoN5(object):
-    # TODO: support multiple keys and mapping keys->out
-    # FIXME currently we hack this with the `save_only_nn_affs` mode
-    #       and the `full_affinities` mode
-    def __init__(self, path, keys,
-                 save_only_nn_affs=False,
-                 full_affinities=False):
+    def __init__(self, path, keys, channel_order=None):
         assert WITH_Z5PY, "Need z5py"
         assert len(keys) in (1, 2)
         self.path = path
-        if save_only_nn_affs:
-            assert len(keys) == 2
-        self.save_only_nn_affs = save_only_nn_affs
-        self.full_affinities = full_affinities
         self.keys = keys
         self.ff = z5py.File(self.path, use_zarr_format=False)
         assert all(kk in self.ff for kk in self.keys), "%s, %s" % (self.path, self.keys)
         self.datasets = [self.ff[kk] for kk in self.keys]
         # we just assume that everything has the same shape...
         self._shape = self.datasets[0].shape
+        if channel_order is None:
+            self.channel_order = list(range(len(self.keys)))
+        else:
+            self.channel_order = channel_order
+        assert all(isinstance(ch, (int, list)) for ch in self.channel_order)
 
     def read(self, bounding_box):
         assert len(self.datasets) == 1
         return self.datasets[0][bounding_box]
 
     def write(self, out, out_bb):
-        if self.save_only_nn_affs:
-            self._write_nn_affs(out, out_bb)
-        else:
-            self._write_all(out, out_bb)
-
-    def _write_nn_affs(self, out, out_bb):
-        assert len(self.datasets) == 2
-        self.datasets[0][out_bb] = (out[1] + out[2]) / 2.
-        self.datasets[1][out_bb] = out[0]
-
-    def _write_all(self, out, out_bb):
         # we always get 4 dimensional out here,
         # however it maybe single channel
-        assert out.ndim == 4
-        if self.full_affinities:
-            self.datasets[0][(slice(None),) + out_bb] = out
-        else:
-            self.datasets[0][out_bb] = out[0]
+
+        for ds, ch in zip(self.datasets, self.channel_order):
+            if isinstance(ch, list):
+                assert out.ndim == 4
+                ds[(slice(None),) + out_bb] = out[ch]
+            else:
+                assert out[ch].ndim == 3
+                ds[out_bb] = out[ch]
 
     @property
     def shape(self):
