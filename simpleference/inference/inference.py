@@ -44,6 +44,7 @@ def load_input(io, offset, context, output_shape, padding_mode='reflect'):
 
 def run_inference_n5(prediction,
                      preprocess,
+                     postprocess,
                      raw_path,
                      save_file,
                      offset_list,
@@ -71,11 +72,9 @@ def run_inference_n5(prediction,
     # averaging over nearest neighbor xy-affinities and z affinities
     # seperately.
     # keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
-    io_out = IoN5(save_file, target_keys,
-                  save_only_nn_affs=only_nn_affs,
-                  full_affinities=full_affinities)
-    run_inference(prediction, preprocess, io_in, io_out, offset_list,
-                  input_shape, output_shape, padding_mode=padding_mode,
+    io_out = IoN5(save_file, target_keys)
+    run_inference(prediction, preprocess, postprocess, io_in, io_out,
+                  offset_list, input_shape, output_shape, padding_mode=padding_mode,
                   num_cpus=num_cpus, log_processed=log_processed)
     # This is not necessary for n5 datasets
     # which do not need to be closed, but we leave it here for
@@ -86,6 +85,7 @@ def run_inference_n5(prediction,
 
 def run_inference(prediction,
                   preprocess,
+                  postprocess,
                   io_in,
                   io_out,
                   offset_list,
@@ -120,6 +120,9 @@ def run_inference(prediction,
     preprocess = dask.delayed(preprocess)
     predict = dask.delayed(prediction)
 
+    if postprocess is not None:
+        postprocess = dask.delayed(postprocess)
+
     @dask.delayed(nout=2)
     def verify_shape(offset, output):
         # crop if necessary
@@ -151,6 +154,8 @@ def run_inference(prediction,
     for offset in offset_list:
         output = tz.pipe(offset, log, load_offset, preprocess, predict)
         output_crop, output_bounding_box = verify_shape(offset, output)
+        if postprocess is not None:
+            output_crop = postprocess(output_crop)
         result = write_output(output_crop, output_bounding_box)
         results.append(result)
 
