@@ -36,14 +36,14 @@ def complete_inference(sample, gpu_list, iteration):
                          dtype='float32',
                          shape=shape,
                          chunks=out_shape,
-                         compressor='blosc',
+                         compression='blosc',
                          codec='lz4',
                          shuffle=1)
         f.create_dataset('affs_z',
                          dtype='float32',
                          shape=shape,
                          chunks=out_shape,
-                         compressor='blosc',
+                         compression='blosc',
                          codec='lz4',
                          shuffle=1)
 

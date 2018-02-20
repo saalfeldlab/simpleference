@@ -4,7 +4,6 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from subprocess import call
 
-sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld/python')
 import z5py
 
 
@@ -16,7 +15,8 @@ def single_inference(gpu, iteration, gpu_offset):
 
 def complete_inference(gpu_list, iteration, gpu_offset):
 
-    out_shape = (56,) *3
+    # create the datasets
+    output_shape = (60, 596, 596)
 
     raw_path = '/nrs/saalfeld/sample_E/sample_E.n5'
     g = z5py.File(raw_path)
@@ -24,18 +24,15 @@ def complete_inference(gpu_list, iteration, gpu_offset):
 
     # open the datasets
     save_path = '/groups/saalfeld/saalfeldlab/sampleE/affinity_predictions.n5'
-    if not os.path.exists(save_path):
-        f = z5py.File(save_path, use_zarr_format=False)
-        f.create_dataset('affs_xy',
-                         shape=shape,
-                         compressor='gzip',
+    f = z5py.File(save_path, use_zarr_format=False)
+    if not 'full_affs' in f:
+        chunks = tuple(outs // 2 for outs in output_shape)
+        chunks = (3,) + chunks
+        f.create_dataset('full_affs',
+                         shape=(12,) + shape,
+                         compression='gzip',
                          dtype='float32',
-                         chunks=out_shape)
-        f.create_dataset('affs_z',
-                         shape=shape,
-                         compressor='gzip',
-                         dtype='float32',
-                         chunks=out_shape)
+                         chunks=chunks)
 
     # run multiprocessed inference
     with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
@@ -49,8 +46,7 @@ def complete_inference(gpu_list, iteration, gpu_offset):
 
 
 if __name__ == '__main__':
-    # gpu_list = range(8)
-    gpu_list = [0, 2, 3, 4, 5, 6, 7]
+    gpu_list = range(6)
     iteration = 400000
     gpu_offset = int(sys.argv[1])
     complete_inference(gpu_list, iteration, gpu_offset)

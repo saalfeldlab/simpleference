@@ -53,8 +53,6 @@ def run_inference_n5(prediction,
                      input_key,
                      target_keys,
                      padding_mode='reflect',
-                     only_nn_affs=False,
-                     full_affinities=False,
                      num_cpus=10,
                      log_processed=None):
 
@@ -68,10 +66,7 @@ def run_inference_n5(prediction,
     # Note that this is not the case for the hdf5 wrapper,
     # which just takes a single key.
     io_in = IoN5(raw_path, [input_key])
-    # This is specific to the N5 datasets, where I have implemented
-    # averaging over nearest neighbor xy-affinities and z affinities
-    # seperately.
-    # keys = ['affs_xy', 'affs_z'] if only_nn_affs else ['full_affs']
+
     io_out = IoN5(save_file, target_keys)
     run_inference(prediction, preprocess, postprocess, io_in, io_out,
                   offset_list, input_shape, output_shape, padding_mode=padding_mode,
@@ -147,6 +142,7 @@ def run_inference(prediction,
     def log(offset):
         if log_processed is not None:
             log_f.write(json.dumps(offset) + ', ')
+            log_f.flush()
         return offset
 
     # iterate over all the offsets, get the input data and predict

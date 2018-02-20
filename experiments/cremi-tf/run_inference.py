@@ -35,6 +35,7 @@ def single_gpu_inference(sample, gpu, iteration):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
+                     None,
                      raw_path,
                      out_file,
                      offset_list,

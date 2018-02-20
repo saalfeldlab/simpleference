@@ -26,11 +26,11 @@ def complete_inference(gpu_list, iteration, gpu_offset):
     # open the datasets
     #f = z5py.File('/groups/saalfeld/saalfeldlab/sampleE/my_prediction.n5', use_zarr_format=False)
     #f.create_dataset('affs_xy', shape=shape,
-    #                 compressor='gzip',
+    #                 compression='gzip',
     #                 dtype='float32',
     #                 chunks=out_shape)
     #f.create_dataset('affs_z', shape=shape,
-    #                 compressor='gzip',
+    #                 compression='gzip',
     #                 dtype='float32',
     #                 chunks=out_shape)
 

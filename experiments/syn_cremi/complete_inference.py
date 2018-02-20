@@ -32,12 +32,12 @@ def complete_inference(sample, gpu_list, iteration):
     f = z5py.File(out_file, use_zarr_format=False)
     f.create_dataset('syncleft_dist',
                      shape=shape,
-                     compressor='gzip',
+                     compression='gzip',
                      dtype='float32',
                      chunks=out_shape)
     f.create_dataset('syncleft_cc',
                      shape=shape,
-                     compressor='gzip',
+                     compression='gzip',
                      dtype='uint64',
                      chunks=out_shape)
 
