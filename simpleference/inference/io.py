@@ -42,22 +42,20 @@ class IoN5(object):
         assert len(self.datasets) == 1
         return self.datasets[0][bounding_box]
 
-    # FIXME this is not general enoguh and does not work for affinities
-    # def write(self, out, out_bb):
-    #     # we always get 4 dimensional out here,
-    #     # however it maybe single channel
-
-    #     for ds, ch in zip(self.datasets, self.channel_order):
-    #         if isinstance(ch, list):
-    #             assert out.ndim == 4
-    #             ds[(slice(None),) + out_bb] = out[ch]
-    #         else:
-    #             assert out[ch].ndim == 3
-    #             ds[out_bb] = out[ch]
-
-    # FIXME works just for affinities
     def write(self, out, out_bb):
-        self.datasets[0][(slice(None),) + out_bb] = out
+
+        for ds, ch in zip(self.datasets, self.channel_order):
+            if isinstance(ch, list):
+                assert out.ndim == 4
+                # FIXME
+                # z5py can't be called with a list as slicing index, hence this does not work.
+                # this means, that we can only assign all channels to a single outputfile for now.
+                # the best way to fix this would be to implement indexing by list in z5py
+                # ds[(slice(None),) + out_bb] = out[ch]
+                ds[(slice(None),) + out_bb] = out
+            else:
+                assert out[ch].ndim == 3
+                ds[out_bb] = out[ch]
 
     @property
     def shape(self):
