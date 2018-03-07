@@ -9,7 +9,7 @@ from functools import partial
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.gunpowder.tensorflow.backend import TensorflowPredict
 from simpleference.backends.gunpowder.preprocess import preprocess
-from simpleference.backends.gunpowder.postprocess import threshold_cc
+from simpleference.postprocessing import *
 
 def single_gpu_inference(sample, gpu, iteration):
     path = '/nrs/saalfeld/lauritzen/%s/workspace.n5/raw' % sample
@@ -50,7 +50,7 @@ def single_gpu_inference(sample, gpu, iteration):
                      target_keys=('syncleft_dist_DTU-2_{0:}'.format(iteration),'syncleft_cc_DTU-2_{0:}'.format(
                          iteration)),
                      input_key='gray',
-                     log_processed = os.path.join(os.path.dirname(offset_file), 'list_gpu_{0:}_{'
+                     log_processed=os.path.join(os.path.dirname(offset_file), 'list_gpu_{0:}_{'
                                                                                 '1:}_processed.txt'.format(gpu,
                                                                                                            iteration)))
     t_predict = time.time() - t_predict
