@@ -21,3 +21,10 @@ def nn_affs(data, output_bounding_box):
     output[0] = (data[1] + data[2]) / 2.
     output[1] = data[0]
     return output
+
+
+def clip_float_to_uint8(data, output_bounding_box, float_range=(-1, 1)):
+    print(list(output_bounding_box[k].start for k in range(len(output_bounding_box))))
+    mult = np.ceil(255./(float_range[1]-float_range[0]))
+    add = 255 - mult*float_range[1]
+    return np.clip((data*mult+add).round(), 0, 255).astype('uint8')
