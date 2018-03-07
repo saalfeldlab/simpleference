@@ -33,12 +33,7 @@ def complete_inference(sample, gpu_list, iteration):
     f.create_dataset('syncleft_dist',
                      shape=shape,
                      compression='gzip',
-                     dtype='float32',
-                     chunks=out_shape)
-    f.create_dataset('syncleft_cc',
-                     shape=shape,
-                     compression='gzip',
-                     dtype='uint64',
+                     dtype='uint8',
                      chunks=out_shape)
 
     # make the offset files, that assign blocks to gpus
@@ -62,6 +57,6 @@ def complete_inference(sample, gpu_list, iteration):
 
 if __name__ == '__main__':
     gpu_list = list(range(8))
-    iteration = 448000
-    for sample in ["A+", "B+", "C+"]:
+    iteration = 550000
+    for sample in ["C", "A", "B"]:
         complete_inference(sample, gpu_list, iteration)
