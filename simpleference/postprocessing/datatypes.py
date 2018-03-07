@@ -1,10 +1,6 @@
 import numpy as np
 
 
-def float_to_uint8(input_, output_bounding_box):
-    return np.round(input_ * 255.).astype('uint8')
-
-
 def clip_float_to_uint8(input_, output_bounding_box, float_range=(0., 1.), safe_scale=True):
     """Convert float values in the range float_range to uint8. Crop values to (0, 255).
 
