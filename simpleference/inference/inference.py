@@ -148,7 +148,7 @@ def run_inference(prediction,
         output = tz.pipe(offset, log, load_offset, preprocess, predict)
         output_crop, output_bounding_box = verify_shape(offset, output)
         if postprocess is not None:
-            output_crop = postprocess(output_crop)
+            output_crop = postprocess(output_crop, output_bounding_box)
         result = write_output(output_crop, output_bounding_box)
         results.append(result)
 
