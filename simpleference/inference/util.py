@@ -40,6 +40,7 @@ def get_offset_lists(shape,
 def offset_list_from_precomputed(input_list,
                                  gpu_list,
                                  save_folder,
+                                 list_name_extension='',
                                  randomize=False):
 
     if isinstance(input_list, str):
@@ -59,7 +60,7 @@ def offset_list_from_precomputed(input_list,
 
     print("Original len", len(input_list))
     for ii, olist in enumerate(out_list):
-        list_name = os.path.join(save_folder, 'list_gpu_%i.json' % gpu_list[ii])
+        list_name = os.path.join(save_folder, 'list_gpu_{0:}{1:}.json'.format(gpu_list[ii], list_name_extension))
         print("Dumping list number", ii, "of len", len(olist))
         with open(list_name, 'w') as f:
             json.dump(olist, f)

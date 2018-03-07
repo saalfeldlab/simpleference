@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 from math import floor, ceil
 import json
@@ -51,20 +52,21 @@ def make_prediction_blocks(full_shape, downscale_factor, output_shape, mask_file
     with open(output_file, 'w') as f:
         json.dump(prediction_blocks, f)
 
-    n_blocks_total = np.prod([len(range(0, fs, os))
-                              for fs, os in zip(full_shape, output_shape)])
+    n_blocks_total = np.prod([len(range(0, fs, output_s))
+                              for fs, output_s in zip(full_shape, output_shape)])
     print("Percentage of blocks that will be predicted", len(prediction_blocks) / n_blocks_total)
 
     return prediction_mask
 
 
-def order_blocks(block_file, out_file, central_coordinate):
+def order_blocks(block_file, out_file, central_coordinate, resolution=(1,1,1)):
     assert isinstance(central_coordinate, np.ndarray)
     assert len(central_coordinate) == 3
     with open(block_file, 'r') as f:
         prediction_blocks = np.array(json.load(f))
 
-    distances = np.sum(np.square(prediction_blocks - central_coordinate), axis=1)
+    distances = np.sum(np.square(np.multiply(prediction_blocks, resolution) -
+                                 np.multiply(central_coordinate, resolution)), axis=1)
     sort = np.argsort(distances)
 
     prediction_blocks = prediction_blocks[sort]
