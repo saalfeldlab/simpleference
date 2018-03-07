@@ -87,7 +87,7 @@ def run_inference(prediction,
                   input_shape,
                   output_shape,
                   padding_mode='reflect',
-                  num_cpus=4,
+                  num_cpus=5,
                   log_processed=None):
 
     assert callable(prediction)
