@@ -94,9 +94,6 @@ def run_inference(prediction,
     assert callable(preprocess)
     assert len(output_shape) == len(input_shape)
 
-    if log_processed is not None:
-        log_f = open(log_processed, 'a')
-
     n_blocks = len(offset_list)
     print("Starting prediction...")
     print("For %i number of blocks" % n_blocks)
@@ -139,11 +136,11 @@ def run_inference(prediction,
         return 1
 
     @dask.delayed
-    def log(offset):
+    def log(off):
         if log_processed is not None:
-            log_f.write(json.dumps(offset) + ', ')
-            log_f.flush()
-        return offset
+            with open(log_processed, 'a') as log_f:
+                log_f.write(json.dumps(off) + ', ')
+        return off
 
     # iterate over all the offsets, get the input data and predict
     results = []
