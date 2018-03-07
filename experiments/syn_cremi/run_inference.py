@@ -42,7 +42,7 @@ def single_gpu_inference(sample, gpu, iteration):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
-                     clip_float_to_uint8,
+                     partial(clip_float_to_uint8, float_range=(-1,1), safe_scale=False),
                      raw_path,
                      out_file,
                      offset_list,
