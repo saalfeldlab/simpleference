@@ -2,16 +2,19 @@ import os
 import sys
 import time
 import json
+import z5py
 from functools import partial
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.gunpowder.tensorflow.backend import TensorflowPredict
 from simpleference.backends.gunpowder.preprocess import preprocess
-from simpleference.backends.gunpowder.postprocess import threshold_cc
+from simpleference.postprocessing import *
 
 
 def single_gpu_inference(sample, gpu, iteration):
     raw_path = '/groups/saalfeld/saalfeldlab/larissa/data/cremi/cremi_warped_sample{0:}.n5/volumes'.format(sample)
     assert os.path.exists(raw_path), "Path to N5 dataset with raw data and mask does not exist"
+    rf = z5py.File(raw_path, use_zarr_format=False)
+    shape = rf['raw'].shape
 
     weight_meta_graph = '/nrs/saalfeld/heinrichl/synapses/cremi_all_0116_01/unet_checkpoint_{0:}'.format(iteration)
     inference_meta_graph = '/nrs/saalfeld/heinrichl/synapses/cremi_all_0116_01/unet_inference'
@@ -39,14 +42,14 @@ def single_gpu_inference(sample, gpu, iteration):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
-                     partial(threshold_cc, thr=0.15),
+                     partial(clip_float_to_uint8, float_range=(-1,1), safe_scale=False),
                      raw_path,
                      out_file,
                      offset_list,
                      input_key='raw',
                      input_shape=input_shape,
                      output_shape=output_shape,
-                     target_keys=('syncleft_dist', 'syncleft_cc'),
+                     target_keys=('syncleft_dist'),
                      log_processed=os.path.join(os.path.dirname(offset_file),
                                                 'list_gpu_{0:}_processed.txt'.format(gpu))
                      )

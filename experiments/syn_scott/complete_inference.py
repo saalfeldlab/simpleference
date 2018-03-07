@@ -33,13 +33,17 @@ def complete_inference(sample, gpu_list, iteration):
 
     f = z5py.File(out_file, use_zarr_format=False)
     # the n5 datasets might exist already
-    key = 'syncleft_dist_DTU-2_{0:}'.format(iteration)
-    if key not in f:
-        f.create_dataset(key,
-                         shape=shape,
-                         compression='gzip',
-                         dtype='float32',
-                         chunks=output_shape)
+
+    f.create_dataset('syncleft_dist_DTU-2_{0:}'.format(iteration),
+                     shape=shape,
+                     compressor='gzip',
+                     dtype='float32',
+                     chunks=output_shape)
+    f.create_dataset('syncleft_cc_DTU-2_{0:}'.format(iteration),
+                     shape=shape,
+                     compressor='gzip',
+                     dtype='uint64',
+                     chunks=output_shape)
 
 
     # make the offset files, that assign blocks to gpus
@@ -64,6 +68,6 @@ def complete_inference(sample, gpu_list, iteration):
 
 if __name__ == '__main__':
     gpu_list = list(range(8))
-    iteration = 400000
-    sample = sys.argv[1]
-    complete_inference(sample, gpu_list, iteration)
+    iteration = 550000
+    for sample in ['01', '02', '03', '04']:
+        complete_inference(sample, gpu_list, iteration)

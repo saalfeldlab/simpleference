@@ -1,16 +1,21 @@
 import os
 import sys
+sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/z5/bld27/python')
+
 import time
 import json
+import z5py
+from functools import partial
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.gunpowder.tensorflow.backend import TensorflowPredict
 from simpleference.backends.gunpowder.preprocess import preprocess
-
+from simpleference.postprocessing import *
 
 def single_gpu_inference(sample, gpu, iteration):
     path = '/nrs/saalfeld/lauritzen/%s/workspace.n5/raw' % sample
     assert os.path.exists(path), path
-
+    rf = z5py.File(path, use_zarr_format=False)
+    shape = rf['gray'].shape
     weight_meta_graph = '/nrs/saalfeld/heinrichl/synapses/cremi_all_0116_01/unet_checkpoint_%i' % iteration
     inference_meta_graph = '/nrs/saalfeld/heinrichl/synapses/cremi_all_0116_01/unet_inference'
     net_io_json = '/nrs/saalfeld/heinrichl/synapses/cremi_all_0116_01/net_io_names.json'
@@ -36,17 +41,22 @@ def single_gpu_inference(sample, gpu, iteration):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
+                     partial(threshold_cc, thr=0., output_shape=output_shape, ds_shape=shape),
                      path,
                      out_file,
                      offset_list,
                      input_shape=input_shape,
                      output_shape=output_shape,
-                     target_keys='syncleft_dist_DTU-2_{0:}'.format(iteration),
-                     input_key='gray')
+                     target_keys=('syncleft_dist_DTU-2_{0:}'.format(iteration),'syncleft_cc_DTU-2_{0:}'.format(
+                         iteration)),
+                     input_key='gray',
+                     log_processed=os.path.join(os.path.dirname(offset_file), 'list_gpu_{0:}_{'
+                                                                                '1:}_processed.txt'.format(gpu,
+                                                                                                           iteration)))
     t_predict = time.time() - t_predict
 
-    with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:
-        f.write("Inference with gpu %i in %f s" % (gpu, t_predict))
+    with open(os.path.join(os.path.dirname(offset_file), 't-inf_gpu_{0:}_{1:}.txt'.format(gpu, iteration)), 'w') as f:
+        f.write("Inference with gpu %i in %f s\n" % (gpu, t_predict))
 
 
 if __name__ == '__main__':
