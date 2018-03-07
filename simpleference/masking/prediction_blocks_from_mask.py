@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 from math import floor, ceil
 import json
@@ -58,13 +59,14 @@ def make_prediction_blocks(full_shape, downscale_factor, output_shape, mask_file
     return prediction_mask
 
 
-def order_blocks(block_file, out_file, central_coordinate):
+def order_blocks(block_file, out_file, central_coordinate, resolution=(1,1,1)):
     assert isinstance(central_coordinate, np.ndarray)
     assert len(central_coordinate) == 3
     with open(block_file, 'r') as f:
         prediction_blocks = np.array(json.load(f))
 
-    distances = np.sum(np.square(prediction_blocks - central_coordinate), axis=1)
+    distances = np.sum(np.square(np.multiply(prediction_blocks, resolution) -
+                                 np.multiply(central_coordinate, resolution)), axis=1)
     sort = np.argsort(distances)
 
     prediction_blocks = prediction_blocks[sort]
