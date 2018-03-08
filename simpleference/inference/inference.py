@@ -87,15 +87,12 @@ def run_inference(prediction,
                   input_shape,
                   output_shape,
                   padding_mode='reflect',
-                  num_cpus=4,
+                  num_cpus=5,
                   log_processed=None):
 
     assert callable(prediction)
     assert callable(preprocess)
     assert len(output_shape) == len(input_shape)
-
-    if log_processed is not None:
-        log_f = open(log_processed, 'a')
 
     n_blocks = len(offset_list)
     print("Starting prediction...")
@@ -139,11 +136,11 @@ def run_inference(prediction,
         return 1
 
     @dask.delayed
-    def log(offset):
+    def log(off):
         if log_processed is not None:
-            log_f.write(json.dumps(offset) + ', ')
-            log_f.flush()
-        return offset
+            with open(log_processed, 'a') as log_f:
+                log_f.write(json.dumps(off) + ', ')
+        return off
 
     # iterate over all the offsets, get the input data and predict
     results = []
@@ -151,7 +148,7 @@ def run_inference(prediction,
         output = tz.pipe(offset, log, load_offset, preprocess, predict)
         output_crop, output_bounding_box = verify_shape(offset, output)
         if postprocess is not None:
-            output_crop = postprocess(output_crop)
+            output_crop = postprocess(output_crop, output_bounding_box)
         result = write_output(output_crop, output_bounding_box)
         results.append(result)
 
