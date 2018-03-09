@@ -23,15 +23,16 @@ def complete_inference(gpu_list, iteration, gpu_offset):
     shape = g['volumes/raw/s0'].shape
 
     # open the datasets
-    save_path = '/groups/saalfeld/saalfeldlab/sampleE/affinity_predictions.n5'
+    save_path = '/nrs/saalfeld/sample_E/sample_E.n5'
     f = z5py.File(save_path, use_zarr_format=False)
-    if not 'full_affs' in f:
+    if 'volumes/predictions/full_affs' not in f:
         chunks = tuple(outs // 2 for outs in output_shape)
         chunks = (3,) + chunks
-        f.create_dataset('full_affs',
+        f.create_dataset('volumes/predictions/full_affs',
                          shape=(12,) + shape,
                          compression='gzip',
-                         dtype='float32',
+                         level=6,
+                         dtype='uint8',
                          chunks=chunks)
 
     # run multiprocessed inference
@@ -46,7 +47,7 @@ def complete_inference(gpu_list, iteration, gpu_offset):
 
 
 if __name__ == '__main__':
-    gpu_list = range(6)
+    gpu_list = range(8)
     iteration = 400000
     gpu_offset = int(sys.argv[1])
     complete_inference(gpu_list, iteration, gpu_offset)

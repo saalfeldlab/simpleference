@@ -2,10 +2,10 @@ import os
 import sys
 import time
 import json
-sys.path.append('/groups/saalfeld/home/papec/Work/my_projects/nnets/simpleference')
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.gunpowder.tensorflow.backend import TensorflowPredict
 from simpleference.backends.gunpowder.preprocess import preprocess
+from simpleference.postprocessing import float_to_uint8
 
 
 def single_gpu_inference(gpu, iteration, gpu_offset):
@@ -13,7 +13,7 @@ def single_gpu_inference(gpu, iteration, gpu_offset):
     raw_path = '/nrs/saalfeld/sample_E/sample_E.n5'
     path_in_file = 'volumes/raw/s0'
 
-    save_file = '/groups/saalfeld/saalfeldlab/sampleE/affinity_predictions.n5'
+    save_path = '/nrs/saalfeld/sample_E/sample_E.n5'
 
     net_folder = '/groups/saalfeld/home/papec/Work/my_projects/nnets/gunpowder-experiments/experiments/cremi-tf'
     graph_weights = os.path.join(net_folder, 'unet_default/unet_checkpoint_%i' % iteration)
@@ -38,20 +38,21 @@ def single_gpu_inference(gpu, iteration, gpu_offset):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
-                     None,
+                     float_to_uint8,
                      raw_path,
-                     save_file,
+                     save_path,
                      offset_list,
                      input_shape,
                      output_shape,
                      input_key=path_in_file,
-                     target_keys=['full_affs'],
+                     target_keys=['volumes/predictions/full_affs'],
                      num_cpus=10,
+                     channel_order=[list(range(12))],
                      log_processed='./processed_gpu_%i.txt' % (gpu + gpu_offset))
 
     t_predict = time.time() - t_predict
 
-    with open(os.path.join(save_file, 't-inf_gpu%i.txt' % (gpu + gpu_offset,)), 'w') as f:
+    with open(os.path.join(save_path, 't-inf_gpu%i.txt' % (gpu + gpu_offset,)), 'w') as f:
         f.write("Inference with gpu %i in %f s" % (gpu, t_predict))
 
 

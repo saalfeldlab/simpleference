@@ -28,13 +28,17 @@ def complete_inference(sample,
 
     # the n5 file might exist already
     f = z5py.File(out_file, use_zarr_format=False)
+
+    if 'predictions' not in f:
+        f.create_group('predictions')
+
     if 'predictions/full_affs' not in f:
         chunks = (3,) + tuple(outs // 2 for outs in output_shape)
         aff_shape = (12,) + shape
         f.create_dataset('predictions/full_affs',
                          shape=aff_shape,
                          compression='gzip',
-                         dtype='float32',
+                         dtype='uint8',
                          chunks=chunks)
 
     # make the offset files, that assign blocks to gpus
@@ -56,5 +60,5 @@ if __name__ == '__main__':
     gpu_list = list(range(8))
     iteration = 400000
     # for sample in ('A+', 'B+', 'C+'):
-    for sample in ('B+', 'C+'):
+    for sample in ('B', 'C'):
         complete_inference(sample, gpu_list, iteration)

@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+from simpleference.postprocessing import float_to_uint8
 from simpleference.inference.inference import run_inference_n5
 from simpleference.backends.gunpowder.tensorflow.backend import TensorflowPredict
 from simpleference.backends.gunpowder.preprocess import preprocess
@@ -35,7 +36,7 @@ def single_gpu_inference(sample, gpu, iteration):
     t_predict = time.time()
     run_inference_n5(prediction,
                      preprocess,
-                     None,
+                     float_to_uint8,
                      raw_path,
                      out_file,
                      offset_list,
@@ -43,8 +44,7 @@ def single_gpu_inference(sample, gpu, iteration):
                      target_keys='predictions/full_affs',
                      input_shape=input_shape,
                      output_shape=output_shape,
-                     full_affinities=True,
-                     only_nn_affs=False)
+                     channel_order=[list(range(12))])
     t_predict = time.time() - t_predict
 
     with open(os.path.join(out_file, 't-inf_gpu%i.txt' % gpu), 'w') as f:

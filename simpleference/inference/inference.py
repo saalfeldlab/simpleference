@@ -54,7 +54,8 @@ def run_inference_n5(prediction,
                      target_keys,
                      padding_mode='reflect',
                      num_cpus=10,
-                     log_processed=None):
+                     log_processed=None,
+                     channel_order=None):
 
     assert os.path.exists(raw_path)
     assert os.path.exists(raw_path)
@@ -67,7 +68,7 @@ def run_inference_n5(prediction,
     # which just takes a single key.
     io_in = IoN5(raw_path, [input_key])
 
-    io_out = IoN5(save_file, target_keys)
+    io_out = IoN5(save_file, target_keys, channel_order=channel_order)
     run_inference(prediction, preprocess, postprocess, io_in, io_out,
                   offset_list, input_shape, output_shape, padding_mode=padding_mode,
                   num_cpus=num_cpus, log_processed=log_processed)
