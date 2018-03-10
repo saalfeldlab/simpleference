@@ -114,51 +114,62 @@ def run_inference(prediction,
     def get_offset():
         return client.request()
 
+    @dask.delayed
+    def log(offset):
+        if log_processed is not None and offset is not None:
+            with open(log_processed, 'a') as log_f:
+                log_f.write(json.dumps(offset) + ', ')
+        return offset
+
     @dask.delayed(nout=2)
     def load_offset(offset):
+        if offset is None:
+            return None, None
         return (load_input(io_in, offset, context, output_shape,
                            padding_mode=padding_mode),
                 offset)
 
     @dask.delayed(nout=2)
     def prepro(data, offset):
+        if data is None:
+            return None, None
         return preprocess(data), offset
 
-    @dask.delayed
+    @dask.delayed(nout=2)
     def predict(data, offset):
+        if data is None:
+            return None, None
         pred = prediction(data)
         client.request(offset)
-        return pred
-
-    if postprocess is not None:
-        postprocess = dask.delayed(postprocess)
+        return pred, offset
 
     @dask.delayed(nout=2)
     def verify_shape(offset, output):
+        if offset is None:
+            return None, None
         # crop if necessary
         stops = [off + outs for off, outs in zip(offset, output.shape[1:])]
-
         if any(stop > dim_size for stop, dim_size in zip(stops, shape)):
             bb = ((slice(None),) +
                   tuple(slice(0, dim_size - off if stop > dim_size else None)
                         for stop, dim_size, off in zip(stops, shape, offset)))
             output = output[bb]
-
         output_bounding_box = tuple(slice(off, off + outs)
                                     for off, outs in zip(offset, output_shape))
         return output, output_bounding_box
 
-    @dask.delayed
-    def write_output(output, output_bounding_box):
-        io_out.write(output, output_bounding_box)
-        return 1
+    if postprocess is not None:
+        def postpro(data):
+            if data is None:
+                return None
+            return postprocess(data)
 
     @dask.delayed
-    def log(offset):
-        if log_processed is not None:
-            with open(log_processed, 'a') as log_f:
-                log_f.write(json.dumps(offset) + ', ')
-        return offset
+    def write_output(output, output_bounding_box):
+        if output is None:
+            return 0
+        io_out.write(output, output_bounding_box)
+        return 1
 
     # iterate over all the offsets, get the input data and predict
     results = []
