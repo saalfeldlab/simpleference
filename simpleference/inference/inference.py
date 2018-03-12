@@ -54,7 +54,7 @@ def run_inference_n5(prediction,
                      input_key,
                      target_keys,
                      padding_mode='reflect',
-                     num_cpus=10,
+                     num_cpus=5,
                      log_processed=None,
                      channel_order=None):
 

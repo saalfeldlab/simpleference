@@ -1,43 +1,47 @@
 from __future__ import print_function
-import z5py
-from dask import delayed, compute, threaded
-from simpleference.inference.util import get_offset_lists
+import os
+from concurrent.futures import ProcessPoolExecutor
+from subprocess import call
 
-from run_inference import single_gpu_inference
+from simpleference.inference.util import get_offset_lists
+import z5py
+
+
+def single_inference(sample, gpu):
+    call(['./run_inference.sh', sample, str(gpu)])
+    return True
 
 
 def complete_inference(sample, gpu_list):
 
     # path to the raw data
-    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s.n5' % sample
+    raw_path = '/groups/saalfeld/home/papec/Work/neurodata_hdd/cremi_warped/sample%s_inference.n5' % sample
+    assert os.path.exists(raw_path), raw_path
     rf = z5py.File(raw_path, use_zarr_format=False)
-    shape = rf['raw'].shape
+    shape = rf['data'].shape
 
     # create the datasets
-    out_shape = (56,) * 3
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/inference_tests/torch_master_test_sample%s.n5' % sample
+    output_shape = (32, 320, 320)
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/mws/unet-1/Predictions/prediction_sample%s.n5' % sample
 
     # the n5 file might exist already
     f = z5py.File(out_file, use_zarr_format=False)
-    if 'affs_xy' not in f:
-        f.create_dataset('affs_xy', shape=shape,
-                         compression='gzip',
-                         dtype='float32',
-                         chunks=out_shape)
-    if 'affs_z' not in f:
-        f.create_dataset('affs_z', shape=shape,
-                         compression='gzip',
-                         dtype='float32',
-                         chunks=out_shape)
+
+    if 'full_affs' not in f:
+        # chunks = (3,) + tuple(outs // 2 for outs in output_shape)
+        chunks = (3,) + output_shape
+        aff_shape = (19,) + shape
+        f.create_dataset('full_affs', shape=aff_shape,
+                         compression='gzip', dtype='float32', chunks=chunks)
 
     # make the offset files, that assign blocks to gpus
     save_folder = './offsets_sample%s' % sample
-    output_shape = (56, 56, 56)
     get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
-    tasks = [delayed(single_gpu_inference)(sample, gpu) for gpu in gpu_list]
-    result = compute(*tasks, traverse=False,
-                     get=threaded.get, num_workers=len(gpu_list))
+    # run multiprocessed inference
+    with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
+        tasks = [pp.submit(single_inference, sample, gpu) for gpu in gpu_list]
+        result = [t.result() for t in tasks]
 
     if all(result):
         print("All gpu's finished inference properly.")
@@ -46,6 +50,7 @@ def complete_inference(sample, gpu_list):
 
 
 if __name__ == '__main__':
-    for sample in ('A+',):
-        gpu_list = list(range(8))
+    gpu_list = list(range(8))
+    samples = ('A+', 'B+', 'C+')
+    for sample in samples:
         complete_inference(sample, gpu_list)
