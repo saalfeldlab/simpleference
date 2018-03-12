@@ -111,7 +111,7 @@ def run_inference(prediction,
     # Option 2: provide second code stream, which just passes through `None and does nothing`
     # -> 2 should be easier !
     @dask.delayed
-    def get_offset():
+    def get_offset(dummy):
         return client.request()
 
     @dask.delayed
@@ -121,32 +121,34 @@ def run_inference(prediction,
                 log_f.write(json.dumps(offset) + ', ')
         return offset
 
-    @dask.delayed(nout=2)
+    @dask.delayed
     def load_offset(offset):
         if offset is None:
-            return None, None
+            return None
         return (load_input(io_in, offset, context, output_shape,
                            padding_mode=padding_mode),
                 offset)
 
-    @dask.delayed(nout=2)
-    def prepro(data, offset):
-        if data is None:
-            return None, None
-        return preprocess(data), offset
+    @dask.delayed
+    def prepro(input_):
+        if input_ is None:
+            return None
+        data, offset = input_
+        return (preprocess(data), offset)
 
     @dask.delayed(nout=2)
-    def predict(data, offset):
-        if data is None:
+    def predict(input_):
+        if input_ is None:
             return None, None
+        data, offset = input_
         pred = prediction(data)
         client.request(offset)
         return pred, offset
 
-    @dask.delayed(nout=2)
+    @dask.delayed(nout=3)
     def verify_shape(offset, output):
         if offset is None:
-            return None, None
+            return None, None, None
         # crop if necessary
         stops = [off + outs for off, outs in zip(offset, output.shape[1:])]
         if any(stop > dim_size for stop, dim_size in zip(stops, shape)):
@@ -156,7 +158,7 @@ def run_inference(prediction,
             output = output[bb]
         output_bounding_box = tuple(slice(off, off + outs)
                                     for off, outs in zip(offset, output_shape))
-        return output, output_bounding_box
+        return output, output_bounding_box, offset
 
     if postprocess is not None:
         def postpro(data):
@@ -165,23 +167,26 @@ def run_inference(prediction,
             return postprocess(data)
 
     @dask.delayed
-    def write_output(output, output_bounding_box):
+    def write_output(output, output_bounding_box, offset):
         if output is None:
             return 0
         io_out.write(output, output_bounding_box)
+        # TODO need to confirm the offset here
+        client.request(offset)
         return 1
 
     # iterate over all the offsets, get the input data and predict
     results = []
     # TODO get max-number of blocks from client
     # or can we somehow get this into a while loop ???
-    max_num_requests = 100000
+    # FIXME don't hardcode
+    max_num_requests = 1000
     for _ in range(max_num_requests):
-        output, offset = tz.pipe(get_offset, log, load_offset, prepro, predict)
-        output_crop, output_bounding_box = verify_shape(offset, output)
+        output, offset = tz.pipe(None, get_offset, log, load_offset, prepro, predict)
+        output_crop, output_bounding_box, offset = verify_shape(offset, output)
         if postprocess is not None:
             output_crop = postprocess(output_crop, output_bounding_box)
-        result = write_output(output_crop, output_bounding_box)
+        result = write_output(output_crop, output_bounding_box, offset)
         results.append(result)
 
     get = functools.partial(dask.threaded.get, num_workers=num_cpus)
