@@ -22,7 +22,7 @@ def complete_inference(sample, gpu_list):
 
     # create the datasets
     output_shape = (32, 320, 320)
-    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/mws/unet-1/Predictions/prediction_sample%s.n5' % sample
+    out_file = '/groups/saalfeld/home/papec/Work/neurodata_hdd/networks/neurofire/mws/hed-1/Predictions/prediction_sample%s.n5' % sample
 
     # the n5 file might exist already
     f = z5py.File(out_file, use_zarr_format=False)
@@ -33,10 +33,6 @@ def complete_inference(sample, gpu_list):
         aff_shape = (19,) + shape
         f.create_dataset('full_affs', shape=aff_shape,
                          compression='gzip', dtype='float32', chunks=chunks)
-
-    # make the offset files, that assign blocks to gpus
-    save_folder = './offsets_sample%s' % sample
-    get_offset_lists(shape, gpu_list, save_folder, output_shape=output_shape)
 
     # run multiprocessed inference
     with ProcessPoolExecutor(max_workers=len(gpu_list)) as pp:
@@ -52,5 +48,5 @@ def complete_inference(sample, gpu_list):
 if __name__ == '__main__':
     gpu_list = list(range(8))
     samples = ('A+', 'B+', 'C+')
-    for sample in samples:
-        complete_inference(sample, gpu_list)
+    sample = samples[2]
+    complete_inference(sample, gpu_list)
