@@ -1,1 +1,1 @@
-from .backend import PyTorchPredict
+from .backend import PyTorchPredict, InfernoPredict
