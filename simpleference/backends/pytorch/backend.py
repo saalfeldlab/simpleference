@@ -27,8 +27,7 @@ class PyTorchPredict(object):
         bb = tuple(slice(diff, shape - diff) for diff, shape in zip(shape_diff, shape))
         if out.ndim == 4:
             bb = (slice(None),) + bb
-        out = out[bb]
-        return out
+        return out[bb]
 
     def __call__(self, input_data):
         assert isinstance(input_data, np.ndarray)
