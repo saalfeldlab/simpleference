@@ -7,7 +7,7 @@ import dask
 import toolz as tz
 import functools
 
-from .io import IoN5  # , IoDVID, IoHDF5
+from .io import IoN5, IoHDF5  # IoDVID
 
 
 def load_input(io, offset, context, output_shape, padding_mode='reflect'):
@@ -69,6 +69,43 @@ def run_inference_n5(prediction,
     io_in = IoN5(raw_path, [input_key])
 
     io_out = IoN5(save_file, target_keys, channel_order=channel_order)
+    run_inference(prediction, preprocess, postprocess, io_in, io_out,
+                  offset_list, input_shape, output_shape, padding_mode=padding_mode,
+                  num_cpus=num_cpus, log_processed=log_processed)
+    # This is not necessary for n5 datasets
+    # which do not need to be closed, but we leave it here for
+    # reference when using other (hdf5) io wrappers
+    io_in.close()
+    io_out.close()
+
+
+def run_inference_h5(prediction,
+                     preprocess,
+                     postprocess,
+                     raw_path,
+                     save_file,
+                     offset_list,
+                     input_shape,
+                     output_shape,
+                     input_key,
+                     target_keys,
+                     padding_mode='reflect',
+                     num_cpus=5,
+                     log_processed=None,
+                     channel_order=None):
+
+    assert os.path.exists(raw_path)
+    assert os.path.exists(raw_path)
+    assert os.path.exists(save_file)
+    if isinstance(target_keys, str):
+        target_keys = (target_keys,)
+    # The N5 IO/Wrapper needs iterables as keys
+    # so we wrap the input key in a list.
+    # Note that this is not the case for the hdf5 wrapper,
+    # which just takes a single key.
+    io_in = IoHDF5(raw_path, [input_key])
+
+    io_out = IoHDF5(save_file, target_keys, channel_order=channel_order)
     run_inference(prediction, preprocess, postprocess, io_in, io_out,
                   offset_list, input_shape, output_shape, padding_mode=padding_mode,
                   num_cpus=num_cpus, log_processed=log_processed)

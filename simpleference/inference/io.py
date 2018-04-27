@@ -21,13 +21,15 @@ except ImportError:
     WITH_DVID = False
 
 
-class IoN5(object):
-    def __init__(self, path, keys, channel_order=None):
-        assert WITH_Z5PY, "Need z5py"
+class IoBase(object):
+    """
+    Base class for I/O with h5 and n5
+    """
+    def __init__(self, path, keys, io_module, channel_order=None):
         assert len(keys) in (1, 2)
         self.path = path
         self.keys = keys
-        self.ff = z5py.File(self.path, use_zarr_format=False)
+        self.ff = io_module.File(self.path, use_zarr_format=False)
         assert all(kk in self.ff for kk in self.keys), "%s, %s" % (self.path, self.keys)
         self.datasets = [self.ff[kk] for kk in self.keys]
         # we just assume that everything has the same shape...
@@ -65,27 +67,19 @@ class IoN5(object):
         pass
 
 
-class IoHDF5(object):
-    def __init__(self, path, key):
+class IoHDF5(IoBase):
+    def __init__(self, path, keys, channel_order=None):
         assert WITH_H5PY, "Need h5py"
-        self.path = path
-        self.ff = h5py.File(self.path)
-        self.ds = self.ff[key]
-        self._shape = self.ds.shape
-
-    def read(self, bb):
-        return self.ds[bb]
-
-    def write(self, out, out_bb):
-        bb = (slice(None),) + out_bb
-        self.ds[bb] = out
-
-    @property
-    def shape(self):
-        return self._shape
+        super(IoBase, self).__init__(path, keys, h5py, channel_order)
 
     def close(self):
         self.ff.close()
+
+
+class IoN5(IoBase):
+    def __init__(self, path, keys, channel_order=None):
+        assert WITH_Z5PY, "Need z5py"
+        super(IoBase, self).__init__(path, keys, z5py, channel_order)
 
 
 class IoDVID(object):
