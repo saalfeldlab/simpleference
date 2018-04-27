@@ -29,7 +29,7 @@ class IoBase(object):
         assert len(keys) in (1, 2)
         self.path = path
         self.keys = keys
-        self.ff = io_module.File(self.path, use_zarr_format=False)
+        self.ff = io_module.File(self.path)
         assert all(kk in self.ff for kk in self.keys), "%s, %s" % (self.path, self.keys)
         self.datasets = [self.ff[kk] for kk in self.keys]
         # we just assume that everything has the same shape...
@@ -70,7 +70,7 @@ class IoBase(object):
 class IoHDF5(IoBase):
     def __init__(self, path, keys, channel_order=None):
         assert WITH_H5PY, "Need h5py"
-        super(IoBase, self).__init__(path, keys, h5py, channel_order)
+        super(IoHDF5, self).__init__(path, keys, h5py, channel_order)
 
     def close(self):
         self.ff.close()
@@ -79,7 +79,7 @@ class IoHDF5(IoBase):
 class IoN5(IoBase):
     def __init__(self, path, keys, channel_order=None):
         assert WITH_Z5PY, "Need z5py"
-        super(IoBase, self).__init__(path, keys, z5py, channel_order)
+        super(IoN5, self).__init__(path, keys, z5py, channel_order)
 
 
 class IoDVID(object):
