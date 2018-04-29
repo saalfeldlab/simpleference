@@ -147,6 +147,7 @@ def run_inference(prediction,
     def load_offset(offset):
         return load_input(io_in, offset, context, output_shape,
                           padding_mode=padding_mode)
+
     preprocess = dask.delayed(preprocess)
     predict = dask.delayed(prediction)
 

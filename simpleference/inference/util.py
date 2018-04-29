@@ -8,7 +8,7 @@ import numpy as np
 
 
 # this returns the offsets for the given output blocks.
-# blocks are padded on the fly in the inference if necessary
+# blocks are padded on the fly during inference if necessary
 def get_offset_lists(shape,
                      gpu_list,
                      save_folder,
@@ -69,7 +69,7 @@ def offset_list_from_precomputed(input_list,
 def stitch_prediction_blocks(save_path,
                              block_folder,
                              shape,
-                             key = 'data',
+                             key='data',
                              end_channel=None,
                              n_workers=8,
                              chunks=(1, 64, 64, 64)):
@@ -90,7 +90,6 @@ def stitch_prediction_blocks(save_path,
         bb = chan_slice + tuple(slice(off, off + block_shape[ii])
                                 for ii, off in enumerate(offsets))
         ds[bb] = block_data
-
 
     with h5py.File(save_path, 'w') as f:
         ds = f.create_dataset(key,

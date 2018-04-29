@@ -26,7 +26,8 @@ class IoBase(object):
     Base class for I/O with h5 and n5
     """
     def __init__(self, path, keys, io_module, channel_order=None):
-        assert len(keys) in (1, 2)
+        assert isinstance(keys, (tuple, list)), type(keys)
+        assert len(keys) in (1, 2), str(len(keys))
         self.path = path
         self.keys = keys
         self.ff = io_module.File(self.path)

@@ -30,13 +30,13 @@ class TensorflowPredict(object):
                  inference_graph_basename,
                  input_key,
                  output_key):
-        assert os.path.exists(weight_graph_basename + '.index')
+        assert os.path.exists(weight_graph_basename + '.index'), weight_graph_basename
         # NOTE this seems a bit dubious, don't know if this is persistent
         # for different tf models
         # assert os.path.exists(weight_graph_basename + '.data-00000-of-00001')
         self.weight_graph_basename = weight_graph_basename
 
-        assert os.path.exists(inference_graph_basename + '.meta')
+        assert os.path.exists(inference_graph_basename + '.meta'), inference_graph_basename
         self.inference_graph_basename = inference_graph_basename
 
         self.input_key = input_key
